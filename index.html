@@ -12843,6 +12843,13 @@ const MaoMat_UNITS = {
 };
 const MaoMat_Chev = () =>
   c.jsx("svg", { className: "mm-chev", viewBox: "0 0 24 24", "aria-hidden": "true", children: c.jsx("path", { d: "M9 6l6 6-6 6" }) });
+/* ширина пропуска: вместительная и стандартная (ступени), не прыгает при вводе */
+function MaoMat_blankEm(t) {
+  /* одна ширина на всё задание — по самому длинному ответу, ступенями */
+  const len = (x) => [...String(x || "").replace(/[，。？！、：；,.?!:;\s]/g, "")].length;
+  const n = Math.max(0, ...(t.items || []).map((it) => Math.max(len(it.show), ...(it.a || []).slice(0, 3).map(len))));
+  return n <= 4 ? 6 : n <= 7 ? 9 : n <= 11 ? 13 : Math.min(n + 2, 22);
+}
 const MaoMat_TINT = { tb1: "#F1ECE2", tb2: "#F2EEEE", tb3: "#D8ECF2", tb4: "#DDE8EE", tb5: "#ECF1DA", tb6: "#EEF0DE", tb7: "#DDE2E7", tb8: "#E2E4E7" };
 function MaoMat_Screen() {
   const nav = vn();
@@ -12951,17 +12958,22 @@ function MaoMat_BookScreen({ tb }) {
                       onClick: L ? () => open(L) : void 0,
                       className: Te("mm-row mm-tile", !L && "mm-row-soon"),
                       children: [
-                        c.jsx("span", { className: "mm-tile-big", "aria-hidden": "true", children: i + 1 }),
                         c.jsxs("span", {
-                          className: "mm-tile-top",
+                          className: "mm-tile-text",
                           children: [
-                            c.jsx("b", { children: "Урок " + (i + 1) }),
-                            rev && c.jsx("span", { className: "mm-tile-tag", children: "Повторение" }),
-                            !L && c.jsx("span", { className: "mm-tile-tag mm-tile-soon", children: "Скоро" }),
+                            c.jsxs("span", {
+                              className: "mm-tile-top",
+                              children: [
+                                c.jsx("b", { children: "Урок " + (i + 1) }),
+                                rev && c.jsx("span", { className: "mm-tile-tag", children: "Повторение" }),
+                                !L && c.jsx("span", { className: "mm-tile-tag mm-tile-soon", children: "Скоро" }),
+                              ],
+                            }),
+                            c.jsx("span", { className: "mm-tile-zh", children: l[0] }),
+                            c.jsx("span", { className: "mm-tile-ru", children: l[1] || "" }),
                           ],
                         }),
-                        c.jsx("span", { className: "mm-tile-zh", children: l[0] }),
-                        c.jsx("span", { className: "mm-tile-ru", children: l[1] || "" }),
+                        c.jsx("span", { className: "mm-tile-big", "aria-hidden": "true", children: i + 1 }),
                       ],
                     },
                     tb.id + "_lesson_" + (i + 1),
@@ -13466,37 +13478,16 @@ function MaoMat_Example({ ex, R, indent }) {
                 className: "mm-tr",
                 children: [
                   c.jsx("span", { className: "mm-tr-mark" }),
-                  c.jsxs("div", {
-                    className: "min-w-0",
-                    children: [
-                      c.jsx("div", { className: "font-zh text-[20px] leading-snug text-black/45", children: MaoMat_ZW(ex[0]) }),
-                      R.py(k) && c.jsx("div", { className: "text-[13.5px] text-black/40 mt-1", children: ex[1] }),
-                      R.ru(k) && c.jsx("div", { className: "text-[13.5px] text-black/55 mt-0.5", children: ex[2] }),
-                    ],
-                  }),
+                  c.jsx("div", { className: "min-w-0", children: c.jsx(MaoMat_ExText, { z: ex[0], p: ex[1], r: ex[2], R, k, dim: !0 }) }),
                   c.jsx("span", { className: "mm-tr-mark", children: c.jsx(MaoMat_Arrow, {}) }),
-                  c.jsxs("div", {
-                        className: "min-w-0",
-                        children: [
-                          c.jsx("div", { className: "font-zh text-[20px] leading-snug", children: MaoMat_ZW(ex[3]) }),
-                          R.py(k) && c.jsx("div", { className: "text-[13.5px] text-black/50 mt-1", children: ex[4] }),
-                          R.ru(k) && c.jsx("div", { className: "text-[13.5px] text-black/75 mt-0.5", children: ex[5] }),
-                        ],
-                      }),
+                  c.jsx("div", { className: "min-w-0", children: c.jsx(MaoMat_ExText, { z: ex[3], p: ex[4], r: ex[5], R, k }) }),
                 ],
               })
             : c.jsxs("div", {
                 className: indent ? "mm-tr" : "",
                 children: [
                   indent && c.jsx("span", { className: "mm-tr-mark" }),
-                  c.jsxs("div", {
-                    className: "min-w-0",
-                    children: [
-                      c.jsx("div", { className: "font-zh text-[20px] leading-snug", children: MaoMat_ZW(ex[0]) }),
-                      R.py(k) && c.jsx("div", { className: "text-[13.5px] text-black/50 mt-1", children: ex[1] }),
-                      R.ru(k) && c.jsx("div", { className: "text-[13.5px] text-black/75 mt-0.5", children: ex[2] }),
-                    ],
-                  }),
+                  c.jsx("div", { className: "min-w-0", children: c.jsx(MaoMat_ExText, { z: ex[0], p: ex[1], r: ex[2], R, k }) }),
                 ],
               }),
         ],
@@ -13733,7 +13724,39 @@ function MaoMat_Q({ q, blank }) {
 function MaoMat_itemLines(it) {
   const q = String(it.q);
   const full = q.includes("___") ? q : it.pre ? q + "\n" + it.pre + "___" : q;
-  return full.split(/\n|\s+(?=[A-D]：)/).filter(Boolean);
+  return MaoMat_dlgSplit(full, MaoMat_DLG_ZH);
+}
+/* диалог всегда в столбик: реплики «A：… B：…», «老板：… 小王：…» — каждая с новой строки */
+const MaoMat_DLG_ZH = /(?<=[。？！?!…”])\s*(?=(?:[A-D]|[\u4e00-\u9fff]{1,4})[：:])|\s+(?=(?:[A-D]|[\u4e00-\u9fff]{1,4})[：:])|\n/;
+const MaoMat_DLG_LAT = /(?<=[.?!…»"”])\s+(?=\p{Lu}[\p{L}'’\-]*(?:\s\p{L}[\p{L}'’\-]*){0,2}:\s)/u;
+function MaoMat_dlgSplit(s, re) {
+  return String(s || "").split(re).map((x) => x.trim()).filter(Boolean);
+}
+function MaoMat_exLines(z, p, r) {
+  const a = MaoMat_dlgSplit(z, MaoMat_DLG_ZH);
+  if (a.length < 2) return [{ z, p, r }];
+  const pp = MaoMat_dlgSplit(p, MaoMat_DLG_LAT), rr = MaoMat_dlgSplit(r, MaoMat_DLG_LAT);
+  const okP = pp.length === a.length, okR = rr.length === a.length;
+  return a.map((x, i) => ({ z: x, p: okP ? pp[i] : i === a.length - 1 ? p : "", r: okR ? rr[i] : i === a.length - 1 ? r : "" }));
+}
+/* пример (иероглифы + пиньинь + перевод); диалог — реплики столбиком, под каждой её чтение и перевод */
+function MaoMat_ExText({ z, p, r, R, k, dim }) {
+  return c.jsx("div", {
+    className: "flex flex-col gap-2",
+    children: MaoMat_exLines(z, p, r).map((l, i) =>
+      c.jsxs(
+        "div",
+        {
+          children: [
+            c.jsx("div", { className: Te("font-zh text-[20px] leading-snug", dim && "text-black/45"), children: MaoMat_ZW(l.z) }),
+            R.py(k) && l.p && c.jsx("div", { className: Te("text-[13.5px] mt-1", dim ? "text-black/40" : "text-black/50"), children: l.p }),
+            R.ru(k) && l.r && c.jsx("div", { className: Te("text-[13.5px] mt-0.5", dim ? "text-black/55" : "text-black/75"), children: l.r }),
+          ],
+        },
+        i,
+      ),
+    ),
+  });
 }
 /* Часы для заданий «几点»: циферблат в стиле Маомао (белый круг, тонкие деления, чёрные стрелки) */
 function MaoMat_Clock({ time, size = 88 }) {
@@ -13997,7 +14020,7 @@ function MaoMat_Tasks({ L }) {
         onChange: onEdit,
         onKeyDown: onKey,
         className: Te("mm-blank mm-answer mm-task-input", fl && "mm-shake"),
-        style: { width: Math.max(4.5, [...val].length + 1.2) + "em", color, borderBottomColor: color },
+        style: { width: Math.max(MaoMat_blankEm(t), [...val].length + 1.5) + "em", color, borderBottomColor: color },
       });
     /* сборка предложения из кусков (как в компьютерном HSK): куски перетаскивают в окошки по порядку;
        когда все окошки заполнены — проверка: верно — зелёным, неверно — тряска, куски возвращаются */
@@ -14225,7 +14248,7 @@ function MaoMat_Tasks({ L }) {
                 }),
                 t.sample &&
                   c.jsxs("div", {
-                    className: "mm-sample",
+                    className: Te("mm-sample", !t.sample.some((l) => /^→/.test(l)) && "mm-sample-plain"),
                     children: [
                       c.jsx("div", { className: "mm-sample-label", children: "Образец" }),
                       t.sample.map((l, li) => {
@@ -14235,7 +14258,7 @@ function MaoMat_Tasks({ L }) {
                           {
                             className: "mm-zh mm-sample-line",
                             children: [
-                              c.jsx("span", { className: "mm-sample-mark", children: res ? c.jsx(MaoMat_Arrow, {}) : null }),
+                              t.sample.some((x) => /^→/.test(x)) && c.jsx("span", { className: "mm-sample-mark", children: res ? c.jsx(MaoMat_Arrow, {}) : null }),
                               c.jsx("span", { className: res ? "" : "text-black/55", children: MaoMat_ZW(l.replace(/^→\s*/, "")) }),
                             ],
                           },
@@ -14345,7 +14368,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .text-\[24px\]{font-size:24px}
 @media(min-width:1024px){.lg\:justify-end{justify-content:flex-end}}
 .theme-dark .mm-cover{filter:url(#mm-cover-dark)}
-.mm-blank{display:inline-block;background:transparent;outline:none;border:0;border-bottom:2px solid rgba(0,0,0,.28);border-radius:0;padding:0 4px;margin:0 4px;font-size:21px;line-height:1.5;max-width:100%}
+.mm-blank{display:inline-block;text-align:center;background:transparent;outline:none;border:0;border-bottom:2px solid rgba(0,0,0,.28);border-radius:0;padding:0 4px;margin:0 4px;font-size:21px;line-height:1.5;max-width:100%}
 .mm-blank:focus{border-bottom-color:#000}
 .hover\:bg-\[\#EDEDED\]:hover{background-color:#EDEDED}
 .mm-task-text{font-size:23px;line-height:1.7}
@@ -14411,28 +14434,31 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-bookhead-title{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-top:2px}
 .mm-bookhead-sub{font-size:14px;color:rgba(0,0,0,.55);margin-top:3px}
 .mm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
-.mm-tile{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:150px;padding:20px 24px 22px;border-radius:24px;background:#fff;border:1px solid #ECECEA;transition:background-color .15s,border-color .15s,transform .15s}
+.mm-tile{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:18px;align-items:center;text-align:left;min-height:150px;padding:20px 24px 22px;border-radius:24px;background:#fff;border:1px solid #ECECEA;transition:background-color .15s,border-color .15s,transform .15s}
 .mm-tile:not(.mm-row-soon):hover{background:var(--mm-tint,#F2F2F0);border-color:transparent}
 .mm-tile:not(.mm-row-soon):active{transform:scale(.99)}
 .mm-tile.mm-row-soon{cursor:default;opacity:.55}
-.mm-tile-big{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:104px;font-weight:800;letter-spacing:-.05em;line-height:1;color:rgba(0,0,0,.05);font-variant-numeric:tabular-nums;pointer-events:none}
+.mm-tile-text{display:flex;flex-direction:column;align-items:flex-start;min-width:0;height:100%}
+.mm-tile-big{margin-right:-4px;min-width:1.12em;text-align:right;font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:78px;font-weight:800;letter-spacing:-.05em;line-height:1;color:rgba(0,0,0,.05);font-variant-numeric:tabular-nums;pointer-events:none}
 .mm-tile-top{position:relative;display:flex;align-items:center;gap:8px;font-size:13px}
 .mm-tile-top b{font-weight:600}
 .mm-tile-tag{font-size:11.5px;font-weight:600;line-height:1.5;background:#000;color:#fff;border-radius:999px;padding:1px 9px}
 .mm-tile-soon{background:rgba(0,0,0,.12);color:rgba(0,0,0,.6)}
-.mm-tile-zh{position:relative;margin-top:auto;padding-top:22px;font-family:Inter,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;font-size:24px;font-weight:500;line-height:1.3;color:#000;max-width:calc(100% - 64px)}
-.mm-tile-ru{position:relative;font-size:13.5px;line-height:1.35;color:rgba(0,0,0,.55);margin-top:4px;max-width:calc(100% - 20px)}
+.mm-tile-zh{position:relative;margin-top:auto;padding-top:22px;font-family:Inter,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;font-size:21px;font-weight:500;line-height:1.3;color:#000;max-width:100%;text-wrap:balance}
+.mm-tile-ru{position:relative;font-size:13.5px;line-height:1.35;color:rgba(0,0,0,.55);margin-top:4px;max-width:100%;text-wrap:balance}
 @media(max-width:1100px){.mm-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.mm-bookhead{gap:14px;padding:14px 16px;border-radius:22px}.mm-bookhead-cover{width:50px}.mm-bookhead-title{font-size:19px}.mm-bookhead-sub{font-size:12.5px}.mm-back{width:36px;height:36px}.mm-bookpage{padding-top:8px}
-.mm-tiles{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:14px}.mm-tile{min-height:118px;padding:16px 18px 18px;border-radius:20px}.mm-tile-big{font-size:80px;right:14px}.mm-tile-zh{font-size:21px;padding-top:16px}}
-.mm-sample{margin:12px 0 4px;background:#fff;border-radius:16px;padding:12px 18px 12px 4px}
-.mm-sample-label{margin-left:32px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.38);margin-bottom:4px}
+.mm-tiles{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:14px}.mm-tile{min-height:118px;padding:16px 18px 18px;border-radius:20px}.mm-tile-big{font-size:72px}.mm-tile-zh{font-size:21px;padding-top:16px}}
+.mm-sample{margin:12px 0 4px 36px;background:#fff;border-radius:16px;padding:12px 18px 14px 16px}
+.mm-sample-label{margin-left:32px;margin-top:2px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.38);margin-bottom:4px}
 .mm-sample-line{display:grid;grid-template-columns:24px 1fr;column-gap:8px;align-items:center;font-size:21px;line-height:1.6}
+.mm-sample-plain .mm-sample-label{margin-left:0}
+.mm-sample-plain .mm-sample-line{grid-template-columns:minmax(0,1fr)}
 .mm-sample-mark{display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,.4)}
 .mm-sample-mark .mm-arrow,.mm-tr-mark .mm-arrow{margin:0;width:18px;height:18px;opacity:1}
 .mm-tr{display:grid;grid-template-columns:22px 1fr;column-gap:10px;row-gap:10px;align-items:start}
 .mm-tr-mark{display:flex;align-items:center;justify-content:center;height:27.5px;color:rgba(0,0,0,.35)}
-.mm-slot{display:inline-flex;align-items:center;justify-content:center;min-width:3.4em;height:1.55em;padding:0 .45em;margin:0 .3em;border-radius:12px;background:#fff;border:1.5px dashed rgba(0,0,0,.22);vertical-align:middle;font-weight:400;line-height:1;transition:border-color .15s,background-color .15s,transform .15s;box-sizing:border-box}
+.mm-slot{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:4.6em;height:1.55em;padding:0 .45em;margin:0 .3em;border-radius:12px;background:#fff;border:1.5px dashed rgba(0,0,0,.22);vertical-align:middle;font-weight:400;line-height:1;transition:border-color .15s,background-color .15s,transform .15s;box-sizing:border-box}
 .mm-slot-over{border:2px solid #000;background:#FAFAFA;transform:scale(1.06)}
 .mm-slot-ok{border:1.5px solid #2F9E5B;color:#2F9E5B}
 .mm-slot-bad{border:1.5px solid #E5484D;color:#E5484D}
