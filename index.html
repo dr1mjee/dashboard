@@ -13848,7 +13848,7 @@ const MaoMat_FT1 = {
     {
       "n": 1,
       "title": "Пиньинь",
-      "text": "Пиньинь — стандартная система записи звучания китайских иероглифов латинскими буквами. Буквы те же, что в английском языке, но читаются они по своим правилам.",
+      "text": "Запись звучания иероглифов латинскими буквами. Буквы как в английском, но читаются по своим правилам.",
       "blocks": [
         {
           "label": "Примеры",
@@ -13869,110 +13869,164 @@ const MaoMat_FT1 = {
     },
     {
       "n": 2,
-      "title": "Слог: инициаль, финаль и тон",
-      "text": "В китайском слоге выделяют три части: инициаль — начальный согласный, финаль — остальная часть слога, и тон.\nИнициаль + финаль + тон = слог: m + a + четвертый тон = mà.\nФиналь + тон = слог: a + четвертый тон = à.\nИнициали: b p m f d t n l g k h j q x zh ch sh r z c s.\nПростые финали: a o e i u ü.",
-      "blocks": [
+      "title": "Из чего состоит слог",
+      "text": "Инициаль — начальный согласный, финаль — остальная часть слога. Бывают слоги и без инициали.",
+      "formula": [
         {
-          "label": "Инициаль + финаль + тон",
-          "ex": [
+          "parts": [
             [
-              "骂",
-              "mà",
-              "ругать"
+              "m",
+              "инициаль"
+            ],
+            [
+              "a",
+              "финаль"
+            ],
+            [
+              "ˋ",
+              "тон"
             ]
+          ],
+          "res": "mà",
+          "h": "骂 ругать"
+        },
+        {
+          "parts": [
+            [
+              "a",
+              "финаль"
+            ],
+            [
+              "ˋ",
+              "тон"
+            ]
+          ],
+          "res": "à",
+          "h": "啊 а!"
+        }
+      ],
+      "letters": [
+        {
+          "label": "Инициали",
+          "items": [
+            "b",
+            "p",
+            "m",
+            "f",
+            "d",
+            "t",
+            "n",
+            "l",
+            "g",
+            "k",
+            "h",
+            "j",
+            "q",
+            "x",
+            "zh",
+            "ch",
+            "sh",
+            "r",
+            "z",
+            "c",
+            "s"
           ]
         },
         {
-          "label": "Финаль + тон",
-          "ex": [
-            [
-              "啊",
-              "à",
-              "а! — возглас согласия"
-            ]
+          "label": "Простые финали",
+          "items": [
+            "a",
+            "o",
+            "e",
+            "i",
+            "u",
+            "ü"
           ]
         }
-      ]
+      ],
+      "blocks": []
     },
     {
       "n": 3,
-      "title": "Тоны",
-      "text": "Китайский язык тональный: один и тот же слог, произнесенный в разных тонах, имеет разное значение. Тон обозначается знаком над гласным слога.\nПервый тон ā — высокий и ровный. Голос звучит высоко и звонко, как будто оперный певец тянет одну ноту.\nВторой тон á — восходящий, от обычной высоты голоса вверх. Звучит как удивленное «Что-о?!».\nТретий тон ǎ — голос сначала понижается почти до хрипа, а затем повышается. Похоже на довольное протяжное «Да-а!».\nЧетвертый тон à — резко падающий, сверху вниз, как возглас каратиста «Ха!».\nНейтральный тон в пиньине не обозначается: слог произносится кратко, почти без изменения высоты, а его высота зависит от предыдущего слога.",
-      "blocks": [
+      "title": "Четыре тона",
+      "text": "Один и тот же слог в разных тонах — разные слова. Нажмите на карточку, чтобы услышать.\nНейтральный тон знаком не обозначается и звучит коротко и легко: māma.",
+      "tones": [
         {
-          "label": "Один слог, разные значения",
-          "ex": [
-            [
-              "妈",
-              "mā",
-              "мама"
-            ],
-            [
-              "麻",
-              "má",
-              "конопля"
-            ],
-            [
-              "马",
-              "mǎ",
-              "лошадь"
-            ],
-            [
-              "骂",
-              "mà",
-              "ругать"
-            ]
-          ]
+          "py": "mā",
+          "h": "妈",
+          "ru": "мама"
         },
         {
-          "label": "Еще пример",
-          "ex": [
-            [
-              "诗",
-              "shī",
-              "поэзия"
-            ],
-            [
-              "石",
-              "shí",
-              "камень"
-            ],
-            [
-              "史",
-              "shǐ",
-              "история"
-            ],
-            [
-              "室",
-              "shì",
-              "комната"
-            ]
-          ]
+          "py": "má",
+          "h": "麻",
+          "ru": "конопля"
+        },
+        {
+          "py": "mǎ",
+          "h": "马",
+          "ru": "лошадь"
+        },
+        {
+          "py": "mà",
+          "h": "骂",
+          "ru": "ругать"
         }
-      ]
+      ],
+      "blocks": []
     },
     {
       "n": 4,
       "title": "Где ставится знак тона",
-      "text": "Знак тона ставится над слогообразующим гласным — тем, который звучит в слоге отчетливее всего.\nПодсказка — порядок a, o, e, i, u, ü: если в слоге есть a, знак ставится над ней; если a нет, но есть o, — над o, и так далее.\nВ сочетаниях iu и ui знак ставится над последней буквой: liù, guì.",
+      "text": "Над гласным, который стоит левее в этом ряду. В iu и ui — над последней буквой: liù, guì.",
+      "letters": [
+        {
+          "label": "Порядок",
+          "items": [
+            "a",
+            "o",
+            "e",
+            "i",
+            "u",
+            "ü"
+          ],
+          "arrow": true
+        }
+      ],
       "blocks": []
     },
     {
       "n": 5,
-      "title": "Гласные a, u, i",
-      "text": "Гласный a в китайском языке произносится так же, как в русском языке гласный а в слове «шар».\nГласный u в китайском языке произносится так же, как в русском языке гласный у в слове «муха».\nГласный i в китайском языке произносится так же, как гласный и в слове «сила».",
-      "blocks": []
-    },
-    {
-      "n": 6,
-      "title": "Согласные m и f",
-      "text": "Согласный m в китайском языке произносится так же, как согласный м в слове «мама».\nСогласный f в китайском языке произносится так же, как согласный ф в слове «факел».",
-      "blocks": []
-    },
-    {
-      "n": 7,
-      "title": "Согласные n и l",
-      "text": "Произношение согласных n и l в китайском языке сходно с произношением согласных н и л в словах «носок» и «лампа». Главное, что отличает произношение этих согласных в китайском и русском языках, — положение языка. При произношении n и l язык приподнят, а его кончик касается бугорка прямо за верхними зубами.",
+      "title": "Звуки урока",
+      "sounds": [
+        [
+          "a",
+          "как а в слове «шар»"
+        ],
+        [
+          "u",
+          "как у в слове «муха»"
+        ],
+        [
+          "i",
+          "как и в слове «сила»"
+        ],
+        [
+          "m",
+          "как м в слове «мама»"
+        ],
+        [
+          "f",
+          "как ф в слове «факел»"
+        ],
+        [
+          "n",
+          "как н в «носок», но кончик языка на бугорке за верхними зубами"
+        ],
+        [
+          "l",
+          "как л в «лампа», кончик языка там же"
+        ]
+      ],
       "note": [
         "Согласные m, f, n и l в китайском языке всегда твердые.",
         "Если в слоге с гласным u отсутствует начальный согласный, такой слог в пиньине записывается как wu.",
@@ -18260,6 +18314,105 @@ function MaoMat_Example({ ex, R, indent }) {
     ],
   });
 }
+/* ---------- Наглядная фонетика: схемы тонов, формула слога, буквы, звуки ---------- */
+const MaoMat_TONE = [
+  { d: "M14 16 L104 16", n: "1 тон", what: "высокий и ровный", like: "как оперный певец тянет ноту" },
+  { d: "M14 44 C 50 44, 80 34, 104 16", n: "2 тон", what: "восходящий", like: "удивленное «Что-о?!»" },
+  { d: "M14 58 C 38 84, 68 84, 104 30", n: "3 тон", what: "вниз, потом вверх", like: "довольное протяжное «Да-а!»" },
+  { d: "M14 16 L104 72", n: "4 тон", what: "резко падающий", like: "возглас каратиста «Ха!»" },
+];
+function MaoMat_ToneSvg({ d }) {
+  const ys = [72, 58, 44, 30, 16];
+  return c.jsxs("svg", {
+    className: "mm-tone-svg",
+    viewBox: "0 0 120 84",
+    "aria-hidden": "true",
+    children: [
+      ...ys.map((y, i) => c.jsx("line", { x1: 12, x2: 112, y1: y, y2: y, stroke: "currentColor", strokeOpacity: 0.12, strokeWidth: 1 }, "l" + i)),
+      ...ys.map((y, i) => c.jsx("text", { x: 2, y: y + 3.5, fontSize: 9, fill: "currentColor", fillOpacity: 0.35, children: i + 1 }, "t" + i)),
+      c.jsx("path", { d, fill: "none", stroke: "currentColor", strokeWidth: 4, strokeLinecap: "round" }),
+    ],
+  });
+}
+function MaoMat_Tones({ tones }) {
+  return c.jsx("div", {
+    className: "mm-tones",
+    children: tones.map((t, i) => {
+      const T = MaoMat_TONE[i] || {};
+      return c.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "mm-tone",
+          onClick: () => t.h && MaoMat_speak(t.h, "tone:" + t.h),
+          children: [
+            T.d && c.jsx(MaoMat_ToneSvg, { d: T.d }),
+            c.jsx("div", { className: "mm-tone-py", children: t.py }),
+            c.jsx("div", { className: "mm-tone-n", children: T.n || t.n }),
+            c.jsx("div", { className: "mm-tone-what", children: t.what || T.what }),
+            c.jsx("div", { className: "mm-tone-like", children: t.like || T.like }),
+            t.h && c.jsxs("div", { className: "mm-tone-ex", children: [c.jsx("span", { className: "mm-zh", children: t.h }), " ", t.ru] }),
+          ],
+        },
+        i,
+      );
+    }),
+  });
+}
+/* формула слога: [[буква, подпись], …, итог] */
+function MaoMat_Formula({ rows }) {
+  return c.jsx("div", {
+    className: "mm-formulas",
+    children: rows.map((r, i) =>
+      c.jsxs(
+        "div",
+        {
+          className: "mm-formula",
+          children: [
+            ...r.parts.flatMap((p, j) => [
+              j > 0 && c.jsx("span", { className: "mm-formula-op", children: "+" }, "o" + j),
+              c.jsxs("span", { className: "mm-formula-part", children: [c.jsx("b", { children: p[0] }), c.jsx("small", { children: p[1] })] }, "p" + j),
+            ]),
+            c.jsx("span", { className: "mm-formula-op", children: "=" }, "eq"),
+            c.jsxs("span", { className: "mm-formula-part mm-formula-res", children: [c.jsx("b", { children: r.res }), r.h && c.jsx("small", { children: r.h })] }, "r"),
+          ],
+        },
+        i,
+      ),
+    ),
+  });
+}
+/* ряды букв (инициали, финали, порядок гласных) */
+function MaoMat_Letters({ rows }) {
+  return c.jsx("div", {
+    className: "mm-letters",
+    children: rows.map((r, i) =>
+      c.jsxs(
+        "div",
+        {
+          className: "mm-letters-row",
+          children: [
+            c.jsx("div", { className: "mm-letters-l", children: r.label }),
+            c.jsx("div", {
+              className: "mm-letters-set",
+              children: r.items.map((x, j) => [r.arrow && j > 0 && c.jsx("span", { className: "mm-letters-arr", children: "›" }, "a" + j), c.jsx("span", { className: "mm-letter", children: x }, j)]),
+            }),
+          ],
+        },
+        i,
+      ),
+    ),
+  });
+}
+/* звуки урока: буква + с чем сравнить */
+function MaoMat_Sounds({ sounds }) {
+  return c.jsx("div", {
+    className: "mm-sounds",
+    children: sounds.map((x, i) =>
+      c.jsxs("div", { className: "mm-sound", children: [c.jsx("b", { children: x[0] }), c.jsx("span", { children: c.jsx(MaoMat_Xn, { text: x[1] }) })] }, i),
+    ),
+  });
+}
 function MaoMat_GrammarPoint({ g, R }) {
   return c.jsxs("div", {
     children: [
@@ -18271,6 +18424,10 @@ function MaoMat_GrammarPoint({ g, R }) {
         ],
       }),
       g.text && c.jsx("p", { className: "text-[15px] text-black/70 leading-relaxed mb-4 mm-gtext", children: c.jsx(MaoMat_Xn, { text: g.text }) }),
+      g.formula && c.jsx(MaoMat_Formula, { rows: g.formula }),
+      g.letters && c.jsx(MaoMat_Letters, { rows: g.letters }),
+      g.tones && c.jsx(MaoMat_Tones, { tones: g.tones }),
+      g.sounds && c.jsx(MaoMat_Sounds, { sounds: g.sounds }),
       g.note &&
         c.jsxs("div", {
           className: "mm-note",
@@ -19223,6 +19380,33 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-read-cell:hover{background:#F2F2F0}
 .mm-read-on,.mm-read-on:hover{background:#000;color:#fff}
 @media (max-width:640px){.mm-read{margin-left:0}.mm-read-cell{font-size:19px;padding:5px 10px}}
+.mm-tones{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.mm-tone{background:#F5F5F5;border-radius:20px;padding:12px 14px 14px;text-align:left;color:#000;transition:transform .15s}
+.mm-tone:active{transform:scale(.98)}
+.mm-tone-svg{width:100%;height:auto;max-width:150px;display:block;margin-bottom:6px}
+.mm-tone-py{font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:30px;font-weight:600;line-height:1.1}
+.mm-tone-n{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(0,0,0,.4);margin-top:8px}
+.mm-tone-what{font-size:15px;font-weight:600;margin-top:2px}
+.mm-tone-like{font-size:13.5px;color:rgba(0,0,0,.55);line-height:1.35;margin-top:2px}
+.mm-tone-ex{font-size:14px;color:rgba(0,0,0,.6);margin-top:8px}.mm-tone-ex .mm-zh{font-size:20px;color:#000}
+.mm-formulas{display:flex;flex-direction:column;gap:10px;margin:0 0 16px}
+.mm-formula{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px}
+.mm-formula-op{height:46px;display:flex;align-items:center;font-size:18px;color:rgba(0,0,0,.3);padding:0 2px}
+.mm-formula-part{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mm-formula-part b{min-width:46px;height:46px;padding:0 14px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#F5F5F5;font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:22px;font-weight:600}
+.mm-formula-part small{font-size:12px;color:rgba(0,0,0,.45)}
+.mm-formula-res b{background:#000;color:#fff}
+.mm-letters{display:flex;flex-direction:column;gap:10px;margin:0 0 16px}
+.mm-letters-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mm-letters-l{width:110px;font-size:13px;font-weight:600;color:rgba(0,0,0,.45)}
+.mm-letters-set{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;min-width:0}
+.mm-letter{min-width:38px;height:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;background:#F5F5F5;font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:18px;font-weight:500}
+.mm-letters-arr{color:rgba(0,0,0,.3);font-size:18px}
+.mm-sounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:0 0 16px}
+.mm-sound{display:flex;align-items:center;gap:14px;background:#F5F5F5;border-radius:18px;padding:12px 16px}
+.mm-sound b{font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:30px;font-weight:600;min-width:34px;text-align:center}
+.mm-sound span{font-size:14px;line-height:1.35;color:rgba(0,0,0,.65)}
+@media (max-width:760px){.mm-tones{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .mm-glist{display:grid;grid-template-columns:max-content 1fr;row-gap:8px;margin:2px 0 18px}
 .mm-glist-row{grid-column:1/-1;display:grid;grid-template-columns:subgrid;column-gap:20px;align-items:baseline;background:#F5F5F5;border-radius:16px;padding:12px 18px}
 .mm-glist-row b{font-size:17px;font-weight:700;white-space:nowrap}
