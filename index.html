@@ -13032,61 +13032,6 @@ const MaoMat_DLA7 = {
           ]
         }
       ]
-    },
-    {
-      "n": 3,
-      "title": "Полезные фразы урока",
-      "text": "",
-      "list": [
-        [
-          "就是",
-          "вот оно, это и есть"
-        ],
-        [
-          "吧",
-          "в конце предложения делает его мягким предложением: «давай…»"
-        ],
-        [
-          "远吗？ / 不远",
-          "далеко? / недалеко"
-        ],
-        [
-          "认识你很高兴",
-          "рад знакомству"
-        ]
-      ],
-      "blocks": [
-        {
-          "label": "Примеры",
-          "ex": [
-            [
-              "你看，那儿就是。",
-              "Nǐ kàn, nàr jiù shì.",
-              "Смотри, вон оно."
-            ],
-            [
-              "我们一起去吧。",
-              "Wǒmen yìqǐ qù ba.",
-              "Давай пойдём вместе."
-            ],
-            [
-              "留学生楼远吗？",
-              "Liúxuéshēng lóu yuǎn ma?",
-              "Общежитие иностранных студентов далеко?"
-            ],
-            [
-              "留学生楼不远。",
-              "Liúxuéshēng lóu bù yuǎn.",
-              "Общежитие иностранных студентов недалеко."
-            ],
-            [
-              "认识你很高兴。",
-              "Rènshi nǐ hěn gāoxìng.",
-              "Рад с тобой познакомиться."
-            ]
-          ]
-        }
-      ]
     }
   ],
   "texts": [
@@ -13230,14 +13175,10 @@ const MaoMat_DLA7 = {
     {
       "id": "t1",
       "title": "Прослушайте и выберите предложение, которое вы услышали",
+      "audio": ["7-2-4", 13.3, 55.6],
       "items": [
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            13.94,
-            15.91
-          ],
           "opts": [
             "银行在哪儿？",
             "银行在那儿。"
@@ -13248,11 +13189,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            20.63,
-            23.11
-          ],
           "opts": [
             "超市在什么地方？",
             "超市在那个地方。"
@@ -13263,11 +13199,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            27.83,
-            29.93
-          ],
           "opts": [
             "图书馆在这儿。",
             "图书馆在那儿。"
@@ -13278,11 +13209,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            34.99,
-            37.93
-          ],
           "opts": [
             "商场在银行东边。",
             "商场在银行旁边。"
@@ -13293,11 +13219,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            42.71,
-            45.42
-          ],
           "opts": [
             "你看，那个就是。",
             "你看，那儿就是。"
@@ -13308,11 +13229,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "",
-          "audio": [
-            "7-2-4",
-            50.83,
-            54.89
-          ],
           "opts": [
             "留学生楼旁边有一个超市。",
             "留学生楼前边有一个超市。"
@@ -13334,11 +13250,6 @@ const MaoMat_DLA7 = {
       "items": [
         {
           "q": "留学生楼在哪儿？",
-          "audio": [
-            "7-2-5",
-            78.61,
-            81.03
-          ],
           "opts": [
             "体育馆前边",
             "体育馆旁边"
@@ -13349,11 +13260,6 @@ const MaoMat_DLA7 = {
         },
         {
           "q": "这个女学生找谁？",
-          "audio": [
-            "7-2-5",
-            85.71,
-            88.55
-          ],
           "opts": [
             "山田佑",
             "李美丽"
@@ -13378,36 +13284,22 @@ const MaoMat_DLA7 = {
     {
       "id": "t3",
       "title": "Прослушайте и заполните пропуски",
+      "audio": ["7-2-5", 101.5, 120.4],
       "items": [
         {
           "q": "体育馆___就是。",
-          "audio": [
-            "7-2-5",
-            102.13,
-            104.62
-          ],
           "a": [
             "旁边"
           ]
         },
         {
           "q": "你___谁？",
-          "audio": [
-            "7-2-5",
-            109.81,
-            111.05
-          ],
           "a": [
             "找"
           ]
         },
         {
           "q": "我也找她，我们___去吧。",
-          "audio": [
-            "7-2-5",
-            115.83,
-            119.72
-          ],
           "a": [
             "一起"
           ]
@@ -15483,7 +15375,6 @@ function MaoMat_Tasks({ L }) {
             children: [
               c.jsxs("span", { className: "text-[15px] text-black/35 w-6 shrink-0", style: { paddingTop: 8 }, children: [idx + 1, "."] }),
               it.clock && c.jsx(MaoMat_Clock, { time: it.clock }),
-              it.audio && c.jsx("span", { className: "mm-listen-slot", children: c.jsx(MaoMat_AudioBtn, { clip: it.audio, k: "a:" + key, small: !0 }) }),
               it.hint && c.jsx("span", { className: "mm-hint", children: it.hint }),
               it.use && c.jsx("span", { className: "mm-hint mm-use mm-zh", children: MaoMat_ZW(it.use) }),
               c.jsx("div", {
@@ -15712,14 +15603,14 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-listen-sm svg{width:15px;height:15px}
 .mm-listen-sm.mm-listen-on{background:#2F9E5B;color:#fff;box-shadow:none}
 .mm-opts-inline>div{margin:0!important}
-.mm-player{display:flex;align-items:center;gap:14px;margin:14px 0 6px 36px;background:#fff;border-radius:999px;padding:6px 18px 6px 6px}
-.mm-player-btn{width:40px;height:40px;flex-shrink:0;border-radius:999px;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.mm-player{display:flex;align-items:center;gap:10px;width:300px;max-width:calc(100% - 44px);margin:12px 0 4px 44px;background:#fff;border-radius:999px;padding:4px 14px 4px 4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.mm-player-btn{width:30px;height:30px;flex-shrink:0;border-radius:999px;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 .mm-player-btn:active{transform:scale(.94)}
-.mm-player-btn svg{width:17px;height:17px;fill:currentColor;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.mm-player-btn svg{width:13px;height:13px;fill:currentColor;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
 .mm-player-on{background:#2F9E5B}
-.mm-player-track{flex:1;height:6px;border-radius:999px;background:#E6E6E4;cursor:pointer;position:relative;overflow:hidden}
+.mm-player-track{flex:1;height:4px;border-radius:999px;background:#E6E6E4;cursor:pointer;position:relative;overflow:hidden}
 .mm-player-fill{position:absolute;left:0;top:0;bottom:0;background:#000;border-radius:999px;transition:width .12s linear}
-.mm-player-time{font-size:13px;font-variant-numeric:tabular-nums;color:rgba(0,0,0,.55);white-space:nowrap}
+.mm-player-time{font-size:12px;font-variant-numeric:tabular-nums;color:rgba(0,0,0,.55);white-space:nowrap}
 .theme-dark .mm-player{background:#ECECEA}.theme-dark .mm-player-btn{color:#ECECEA}.theme-dark .mm-player-track{background:#D6D6D4}
 .mm-glist{display:flex;flex-direction:column;gap:8px;margin:2px 0 18px}
 .mm-glist-row{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;column-gap:18px;align-items:baseline;background:#F5F5F5;border-radius:16px;padding:12px 18px}
