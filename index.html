@@ -4770,7 +4770,7 @@ const MaoMat_L3 = {
           pre: "B：",
           re: /^(是)?他叫[㐀-鿿]{1,4}他?是[㐀-鿿]{1,10}$/,
           show: "是，他叫李军，是我的朋友。",
-          hint: "Ответьте утвердительно и назовите его имя.",
+          hint: "Ответьте утвердительно, назовите имя",
         },
       ],
     },
@@ -39483,6 +39483,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
             "px-3.5 py-1.5 rounded-full text-[13px] whitespace-nowrap border",
             sec === s.id ? "border-black text-black font-medium" : "border-transparent text-black/40",
           ),
+          style: wide ? void 0 : { padding: "6px 10px" },
           children: (L.secLabels && L.secLabels[s.id]) || s.label,
         },
         s.id,
@@ -39551,7 +39552,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
                     children: L.num ? L.num + ". " + L.title + " · " + L.titleRu : "Повторение · " + L.title,
                   }),
                   c.jsx("div", { className: "flex-1 min-w-0 flex lg:justify-end", children: pills }),
-                  c.jsxs("button", {
+                  wide && c.jsxs("button", {
                     type: "button",
                     onClick: () => (MaoMat_stop(), setPresent(!0)),
                     title: "Урок на экране: по одному слайду, крупно — для демонстрации экрана",
@@ -41845,7 +41846,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .theme-dark .mm-listen-sm{background:#ECECEA;color:#000}
 .mm-use{font-weight:400;font-size:21px;min-width:0;max-width:260px;height:auto;min-height:40px;white-space:normal;padding:4px 14px;line-height:1.35;text-align:center}
 @media(max-width:640px){.mm-use{font-size:18px;max-width:150px;min-height:36px}}
-@media(max-width:640px){.mm-hint{min-width:0;height:36px;font-size:15px;padding:0 10px}.mm-clock{width:72px;height:72px}}
+@media(max-width:640px){.mm-hint{min-width:0;height:auto;min-height:36px;font-size:15px;padding:4px 10px;white-space:normal;max-width:130px;text-align:center;line-height:1.25}.mm-clock{width:72px;height:72px}}
 .mm-arrow{display:inline-block;width:.9em;height:.9em;vertical-align:-.12em;margin:0 .4em;opacity:.55;flex-shrink:0}
 .mm-w{cursor:pointer;border-radius:6px;transition:background-color .12s}
 .mm-w:hover{background:rgba(0,0,0,.07)}
