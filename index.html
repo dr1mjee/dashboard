@@ -39160,6 +39160,18 @@ function MaoMat_blankEm(t) {
   const n = Math.max(0, ...(t.items || []).map((it) => Math.max(len(it.show), ...(it.a || []).slice(0, 3).map(len))));
   return n <= 4 ? 6 : n <= 7 ? 9 : n <= 11 ? 13 : Math.min(n + 2, 22);
 }
+/* ширина поля у пункта: строки задания заканчиваются ровно — если до поля в строке есть текст, поле короче на его длину */
+function MaoMat_itemBlankEm(it, t) {
+  const len = (x) => [...String(x || "").replace(/[，。？！、：；,.?!:;\s]/g, "")].length;
+  const own = (x) => Math.max(len(x.show), ...(x.a || []).slice(0, 3).map(len));
+  const pre = (x) => {
+    const q = String(x.q || "");
+    const j = q.indexOf("___");
+    return j > 0 ? len(q.slice(0, j).split(/\n|[A-ZАБВ][：:]/).pop()) : 0;
+  };
+  if (!t._bw) t._bw = Math.min(22, Math.max(MaoMat_blankEm(t), ...(t.items || []).map((x) => (pre(x) ? pre(x) + own(x) + 1.5 : 0))));
+  return Math.max(own(it) + 1.5, t._bw - pre(it));
+}
 const MaoMat_TINT = { bridge1: "#F6E0E2", bridge2: "#DCE6F4", sc_hsk1: "#FBEBD3", sc_hsk2: "#DCECEC", sc_hsk3: "#FBE3D6", sc_hsk4a: "#F4DCDC", sc_hsk4b: "#F2DADA", sc_hsk5a: "#DDE2EE", sc_hsk5b: "#DADDEC", sc_hsk6a: "#E2DDEA", sc_hsk6b: "#E0DBE8", phon_trainer: "#F4E4E6", tb1: "#F1ECE2", tb2: "#F2EEEE", tb3: "#D8ECF2", tb4: "#DDE8EE", tb5: "#ECF1DA", tb6: "#EEF0DE", tb7: "#DDE2E7", tb8: "#E2E4E7" };
 /* уроки без повторений (у тренажёра повторения идут отдельными плитками) */
 const MaoMat_lessonCount = (tb) => (tb.lessons || []).filter((l) => !(l.length > 2 && l[2] === 0)).length;
@@ -41143,7 +41155,7 @@ const MaoMat_itemAnswer = (it) => (it.lt ? it.lt + " — " + (it.a ? it.a[0] : "
 /* подсказка-фраза (а не короткая метка вроде «2:50» или «справа») — строкой над вопросом */
 const MaoMat_longHint = (h) => String(h).length > 16 || /\s\S+\s/.test(String(h));
 /* ширина плашки по самой длинной метке задания — чтобы вопросы начинались ровно */
-const MaoMat_chipLen = (x) => [...String(x || "")].reduce((n, ch) => n + (/[\u2E80-\uFFEF]/.test(ch) ? 1.05 : 0.58), 0);
+const MaoMat_chipLen = (x) => [...String(x || "")].reduce((n, ch) => n + (/[\u2E80-\uFFEF]/.test(ch) ? 1 : /[\u2026\u2014]/.test(ch) ? 1 : /[A-ZА-Я]/.test(ch) ? 0.68 : 0.58), 0);
 /* слово из списка: сколько пунктов его принимают и сколько раз оно уже верно вставлено */
 const MaoMat_bankNeed = (t, w) => Math.max(1, t.items.filter((it) => (it.a || []).some((x) => MaoMat_key(x) === MaoMat_key(w))).length);
 const MaoMat_bankUsed = (t, answers, w, skip) => t.items.filter((x, i) => t.id + "_0_" + i !== skip && answers[t.id + "_0_" + i] === w && MaoMat_isRight(x, w)).length;
@@ -41312,10 +41324,11 @@ function MaoMat_Tasks({ L }) {
     i >= 0 && all[i + 1] && all[i + 1].focus();
   };
   const chipW = (t) => {
-    const labels = t.items.flatMap((x) => [x.use, x.hint && !MaoMat_longHint(x.hint) ? x.hint : null]).filter(Boolean);
-    if (labels.length < 2) return void 0;
-    const n = Math.max(...labels.map(MaoMat_chipLen));
-    return Math.min(240, Math.round(n * 19 + 30));
+    /* ширина плашки в px: плашки слов (21px) и подсказки (17px, жирные) — по самой длинной в задании */
+    const px = (x, use) => MaoMat_chipLen(x) * (use ? 21 : 17.6) + 34;
+    const w = t.items.flatMap((x) => [x.use ? px(x.use, 1) : 0, x.hint && !MaoMat_longHint(x.hint) ? px(x.hint, 0) : 0]).filter(Boolean);
+    if (w.length < 2) return void 0;
+    return Math.min(260, Math.round(Math.max(...w)));
   };
   const renderItem = (it, idx, t, mode) => {
     if (it.cont && !mode) return null;
@@ -41384,7 +41397,7 @@ function MaoMat_Tasks({ L }) {
         onChange: onEdit,
         onKeyDown: onKey,
         className: Te("mm-blank mm-answer mm-task-input", fl && "mm-shake", hintA && "mm-bulb-ph"),
-        style: { width: Math.max(MaoMat_blankEm(t), [...val].length + 1.5) + "em", textAlign: "center", color, borderBottomColor: color },
+        style: { width: Math.max(MaoMat_itemBlankEm(it, t), [...val].length + 1.5) + "em", textAlign: "center", color, borderBottomColor: color },
       });
     /* сборка предложения из кусков (как в компьютерном HSK): куски перетаскивают в окошки по порядку;
        когда все окошки заполнены — проверка: верно — зелёным, неверно — тряска, куски возвращаются */
