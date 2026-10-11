@@ -40300,6 +40300,11 @@ function MaoMat_PresInput({ pre, fin, state, value, onCheck }) {
 
 /* Пиньинь / перевод, которые раскрываются по клику. Место под них не резервируется —
    но карточки слов имеют фиксированную высоту, поэтому сетка не «прыгает». */
+/* длинное слово (имена вроде 保尔·柯察金) уменьшается, чтобы влезть в карточку одной строкой */
+function MaoMat_fitZh(h, max) {
+  const n = [...String(h || "")].reduce((a, ch) => a + ((/[\u2E80-\uFFEF]/.test(ch) && !/[·・]/.test(ch)) || ch === "…" ? 1 : 0.55), 0);
+  return n <= 3 ? max : "min(" + max + "px, " + (94 / n).toFixed(1) + "cqw)";
+}
 function MaoMat_WordGrid({ words, R }) {
   const cur = MaoMat_useSpeaking();
   return c.jsx("div", {
@@ -40322,9 +40327,9 @@ function MaoMat_WordGrid({ words, R }) {
             "bg-white border rounded-[22px] px-3 py-4 flex flex-col items-center justify-center text-center min-w-0 cursor-pointer transition-colors",
             on ? "border-black" : "border-[#EEEEEE]",
           ),
-          style: { height: 176 },
+          style: { height: 176, containerType: "inline-size" },
           children: [
-            c.jsx("div", { className: "font-zh leading-none", style: { fontSize: 44 }, children: MaoMat_hd(w.h) }),
+            c.jsx("div", { className: "font-zh leading-none whitespace-nowrap", style: { fontSize: MaoMat_fitZh(w.h, 44) }, children: MaoMat_hd(w.h) }),
             c.jsx("div", {
               className: "text-[15px] text-black/55 mt-3",
               style: { display: R.py(k) ? "" : "none" },
