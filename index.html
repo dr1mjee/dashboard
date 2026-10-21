@@ -4560,10 +4560,10 @@ const MaoMat_L2 = {
       title: "Задайте встречный вопрос с частицей 呢",
       sample: ["A：我是俄罗斯人，你呢？", "B：我是白俄罗斯人。"],
       items: [
-        { q: "A：他叫萨沙。", pre: "B：", re: /^[㐀-鿿]{1,4}呢$/, show: "你呢？ / 她呢？" },
-        { q: "A：我是白俄罗斯人。", pre: "B：", re: /^[㐀-鿿]{1,4}呢$/, show: "你呢？" },
-        { q: "A：刘明是老师。", pre: "B：", re: /^[㐀-鿿]{1,4}呢$/, show: "李军呢？" },
-        { q: "A：我不是留学生。", pre: "B：", re: /^[㐀-鿿]{1,4}呢$/, show: "你呢？" },
+        { q: "A：___ B：我也是留学生。", re: /^我是留学生，?(你|您)呢$/, show: "我是留学生，你呢？" },
+        { q: "A：___ B：我叫玛莎。", re: /^我叫[㐀-鿿]{1,4}，?(你|您)呢$/, show: "我叫萨沙，你呢？" },
+        { q: "A：___ B：我不是中国人，我是俄罗斯人。", re: /^我是中国人，?(你|您)呢$/, show: "我是中国人，你呢？" },
+        { q: "A：___ B：他也是老师。", re: /^[㐀-鿿]{1,4}是老师，?(他|她)呢$/, show: "我是老师，他呢？" },
       ],
     },
     {
@@ -39329,7 +39329,7 @@ function MaoMat_BookScreen({ tb }) {
                             l[1] ? c.jsx("span", { className: "mm-tile-ru", children: l[1] }) : c.jsx("span", { className: Te("mm-tile-ru", !/[㐀-鿿]/.test(l[0]) && "mm-tile-lat"), children: l[0] }),
                           ],
                         }),
-                        
+                        !(own && rev) && c.jsx("span", { className: "mm-tile-big", "aria-hidden": "true", children: shown }),
                       ],
                     },
                     tb.id + "_lesson_" + (i + 1),
@@ -41416,7 +41416,7 @@ function MaoMat_Tasks({ L }) {
     };
     /* пропуск для свободного ответа в строке (диалоги) */
     const blank = () =>
-      c.jsxs("span", { className: "mm-bulb-wrap", children: [c.jsx("input", {
+      c.jsxs(c.Fragment, { children: [c.jsxs("span", { className: "mm-bulb-wrap", children: [c.jsx("input", {
         value: val,
         readOnly: checked || locked,
         lang: "zh-CN",
@@ -41429,7 +41429,7 @@ function MaoMat_Tasks({ L }) {
         ref: MaoMat_blankPos,
         className: Te("mm-blank mm-answer mm-task-input", fl && "mm-shake"),
         style: (() => { const W = Math.max(MaoMat_itemBlankEm(it, t), 4), need = [...val].length + 0.6, fs = need > W ? Math.max(0.5, W / need) : 1; return { "--fs": fs, width: "calc(" + W + "em / " + fs + ")", color, borderBottomColor: color }; })(),
-      }, "in"), hintA && !val && c.jsx("span", { className: "mm-bulb-ov", "aria-hidden": "true", children: MaoMat_Z(hintA) }, "ov")] });
+      }, "in"), hintA && !val && c.jsx("span", { className: "mm-bulb-ov", "aria-hidden": "true", children: MaoMat_Z(hintA) }, "ov")] }), showFin && (ok || checked) ? c.jsx("span", { className: "mm-p", children: finMark }, "fin") : null] });
     /* сборка предложения из кусков (как в компьютерном HSK): куски перетаскивают в окошки по порядку;
        когда все окошки заполнены — проверка: верно — зелёным, неверно — тряска, куски возвращаются */
     const orderUI = () => {
@@ -42183,7 +42183,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-wtile{background:#F5F5F5}
 .mm-wtile:hover{background:#EFEFEF}
 .mm-bookhead{background:#F5F5F5 !important}
-.mm-tile{background:#F5F5F5 !important;border:0 !important;min-height:116px;border-radius:24px !important;display:flex !important;flex-direction:column;align-items:stretch}
+.mm-tile{background:#F5F5F5 !important;border:0 !important;border-radius:24px !important}
 .mm-tile:not(.mm-row-soon):hover{background:#EFEFEF !important}
 .mm-tile .mm-tile-top b{font-size:13px;font-weight:400;color:#6B6B6B}
 .mm-tile .mm-tile-ru{font-size:18px;font-weight:500;color:#000;line-height:1.3;margin-top:6px}
