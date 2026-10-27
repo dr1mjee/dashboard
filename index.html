@@ -66318,8 +66318,8 @@ function MaoMat_gSents(lessons) {
 function MaoMat_GIcon({ id, size = 24, color = "currentColor" }) {
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
   if (id === "clock") return MG("svg", p, [MG("circle", { cx: 12, cy: 13, r: 8 }, void 0, "a"), MG("path", { d: "M12 9v4l2.5 2.5M9 2h6" }, void 0, "b")]);
-  /* значок кнопки «Игры» */
-  return MG("svg", p, [MG("rect", { x: 2, y: 6.5, width: 20, height: 11, rx: 5.5 }, void 0, "a"), MG("path", { d: "M7 10.2v3.6M5.2 12h3.6M15.5 11.2h.01M18 13h.01" }, void 0, "b")]);
+  /* значок кнопки «Игры» — мишень */
+  return MG("svg", p, [MG("circle", { cx: 12, cy: 12, r: 8.5 }, void 0, "a"), MG("circle", { cx: 12, cy: 12, r: 4.5 }, void 0, "b"), MG("circle", { cx: 12, cy: 12, r: 1, fill: color }, void 0, "c")]);
 }
 /* серая плашка-статус — как кнопки «Игры» / «На экран» в панели урока */
 function MaoMat_GChip({ children }) {
