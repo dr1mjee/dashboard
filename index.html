@@ -66214,16 +66214,6 @@ const MaoMat_gTime = (s) => {
   return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 };
 const MaoMat_gFs = (n) => "min(" + n + "px, " + (n / 8.4).toFixed(1) + "vh)";
-function MaoMat_gLessons(L, scope) {
-  if (scope !== "upto" || !L.num || !L.key) return [L];
-  const pre = L.key.split(":")[0];
-  const out = [];
-  for (let n = 1; n <= L.num; n++) {
-    const x = n === L.num ? L : MaoMat_READY[pre + ":" + n];
-    x && out.push(x);
-  }
-  return out.length ? out : [L];
-}
 function MaoMat_gWords(lessons) {
   const seen = new Set();
   const out = [];
@@ -66631,7 +66621,7 @@ function MaoMat_GOrder({ sents, words, only, onDone, title, zoom }) {
               ref: (el) => (slotRefs.current[i] = el),
               className: "mm-slot mm-g-slot" + (filled[i] ? " mm-slot-ok" : bad && bad.si === i ? " mm-slot-bad mm-shake" : over === i ? " mm-slot-over" : ""),
             },
-            [filled[i] ? t : "", i === s.t.length - 1 && s.end ? MG("span", { className: "mm-g-end" }, MaoMat_Z(s.end), "e") : null],
+            [filled[i] ? t : "", i === s.t.length - 1 && s.end ? MG("span", { className: "mm-g-end " + (s.end === "。" ? "dot" : "q") }, s.end === "。" ? "。" : MaoMat_HALF[s.end] || s.end, "e") : null],
             "sl" + i,
           ),
         ),
@@ -66684,35 +66674,18 @@ function MaoMat_GResult({ r, title, onAgain, onErrors, onMenu }) {
 }
 
 /* ---------- Выбор игры ---------- */
-function MaoMat_GPreview({ id, words, sents }) {
-  const w = MaoMat_gDistinct(words);
-  const a = w[0] || { h: "", ru: "" };
-  const b = w[1] || a;
+function MaoMat_GPreview({ id }) {
+  const b = (cls, k) => MG("span", { className: cls }, void 0, k);
   if (id === "pairs")
-    return MG("div", { className: "mm-g-pv mm-g-pv-pairs" }, [
-      MG("span", { className: "mm-g-pvc" }, MG("b", {}, "1"), "1"),
-      MG("span", { className: "mm-g-pvc up mm-zh" }, a.h, "2"),
-      MG("span", { className: "mm-g-pvc" }, MG("b", {}, "3"), "3"),
-      MG("span", { className: "mm-g-pvc" }, MG("b", {}, "4"), "4"),
-      MG("span", { className: "mm-g-pvc" }, MG("b", {}, "5"), "5"),
-      MG("span", { className: "mm-g-pvc up ru" }, a.ru, "6"),
-    ]);
+    return MG("span", { className: "mm-g-pv" }, MG("span", { className: "mm-g-pvgrid" }, ["", " on", "", "", "", " on"].map((x, i) => b("mm-g-pvsq" + x, i))));
   if (id === "quiz")
-    return MG("div", { className: "mm-g-pv mm-g-pv-quiz" }, [
-      MG("span", { className: "mm-g-pvq mm-zh" }, a.h, "q"),
-      MG("span", { className: "mm-g-pvo" }, [MG("i", { className: "mm-num mm-num-xs" }, "1", "n"), b.ru], "o1"),
-      MG("span", { className: "mm-g-pvo ok" }, [MG("i", { className: "mm-num mm-num-xs" }, "2", "n"), a.ru], "o2"),
+    return MG("span", { className: "mm-g-pv col" }, [
+      b("mm-g-pvbox", "q"),
+      MG("span", { className: "mm-g-pvopts" }, ["", " on", "", ""].map((x, i) => b("mm-g-pvpill" + x, i)), "o"),
     ]);
-  const s = sents[0];
-  if (!s) return null;
-  return MG("div", { className: "mm-g-pv mm-g-pv-order" }, [
-    MG("span", { className: "mm-g-pvbank" }, s.t.slice(1, 3).map((t, i) => MG("span", { className: "mm-g-pvchip mm-zh" }, t, i)), "b"),
-    MG(
-      "span",
-      { className: "mm-g-pvline mm-zh" },
-      s.t.slice(0, 3).map((t, i) => MG("span", { className: "mm-slot" + (i === 0 ? " mm-slot-ok" : "") }, i === 0 ? t : "", i)),
-      "l",
-    ),
+  return MG("span", { className: "mm-g-pv col" }, [
+    MG("span", { className: "mm-g-pvrow" }, [b("mm-g-pvchip", 1), b("mm-g-pvchip", 2)], "b"),
+    MG("span", { className: "mm-g-pvrow end" }, [b("mm-g-pvslot on", 1), b("mm-g-pvslot", 2), b("mm-g-pvslot", 3), b("mm-g-pvdot", 4)], "l"),
   ]);
 }
 
@@ -66728,18 +66701,14 @@ function MaoMat_hasGames(L) {
 function MaoMat_Games({ L, onClose }) {
   const wide = MaoMat_useWide();
   const zoom = wide ? MaoMat_zoom() : 1;
-  const [scope, setScope] = H.useState(() => MaoMat_state["g:scope"] || "one");
   const [view, setView] = H.useState({ s: "menu" });
   const [run, setRun] = H.useState(0);
-  const upto = L.num > 1 && !!L.key;
-  const sc = upto ? scope : "one";
-  const lessons = H.useMemo(() => MaoMat_gLessons(L, sc), [L, sc]);
+  const lessons = H.useMemo(() => [L], [L]);
   const words = H.useMemo(() => MaoMat_gWords(lessons), [lessons]);
   const sents = H.useMemo(() => MaoMat_gSents(lessons), [lessons]);
   const avail = MaoMat_gAvail(words, sents);
   const games = MaoMat_GAMES.filter((g) => avail[g.id]);
   const g = view.g && MaoMat_GAMES.find((x) => x.id === view.g);
-  const setSc = (v) => ((MaoMat_state["g:scope"] = v), setScope(v));
   const play = (id, only) => (setRun((x) => x + 1), setView({ s: "play", g: id, only }));
   const back = () => (view.s === "menu" ? onClose() : setView({ s: "menu" }));
   const box = H.useRef(null);
@@ -66770,25 +66739,13 @@ function MaoMat_Games({ L, onClose }) {
   let body = null;
   if (view.s === "menu")
     body = MG("div", { className: "mm-g-screen" }, [
-      MG(
-        MaoMat_SectionTitle,
-        {
-          right: upto
-            ? MG("div", { className: "mm-lpills no-scrollbar", role: "group", "aria-label": "Слова для игр" }, [
-                MG("button", { type: "button", className: Te("mm-lpill", sc === "one" && "on"), "aria-pressed": sc === "one", onClick: () => setSc("one") }, "Этот урок", "a"),
-                MG("button", { type: "button", className: Te("mm-lpill", sc === "upto" && "on"), "aria-pressed": sc === "upto", onClick: () => setSc("upto") }, "Уроки 1–" + L.num, "b"),
-              ])
-            : null,
-        },
-        "Игры",
-        "h",
-      ),
+      MG(MaoMat_SectionTitle, {}, "Игры", "h"),
       MG(
         "div",
         { className: "mm-g-tiles" },
         games.map((x) =>
           MG("button", { type: "button", className: "mm-g-tile", onClick: () => play(x.id) }, [
-            MG(MaoMat_GPreview, { id: x.id, words, sents }, void 0, "p"),
+            MG(MaoMat_GPreview, { id: x.id }, void 0, "p"),
             MG("span", { className: "mm-g-tilet" }, [MG("b", {}, x.name, "n"), MG("span", {}, counts[x.id], "c")], "t"),
           ], x.id),
         ),
@@ -68638,21 +68595,21 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-g-tilet{display:flex;flex-direction:column;gap:3px;padding:0 6px}
 .mm-g-tilet b{font-size:19px;font-weight:600;line-height:1.25}
 .mm-g-tilet span{font-size:13.5px;color:rgba(0,0,0,.5)}
-.mm-g-pv{height:168px;border-radius:20px;background:#fff;box-sizing:border-box;padding:16px;overflow:hidden}
-.mm-g-pv-pairs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
-.mm-g-pvc{border-radius:14px;background:#F5F5F5;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0}
-.mm-g-pvc b{font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:26px;font-weight:800;letter-spacing:-.04em;color:rgba(0,0,0,.1)}
-.mm-g-pvc.up{background:#fff;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.12);font-size:26px;color:#000}
-.mm-g-pvc.ru{font-size:12px;font-weight:600;padding:0 6px;text-align:center;line-height:1.2}
-.mm-g-pv-quiz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
-.mm-g-pvq{font-size:40px;line-height:1.1;margin-bottom:4px;color:#000}
-.mm-g-pvo{width:100%;height:32px;border-radius:999px;border:1.5px solid rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;padding:0 10px;box-sizing:border-box;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mm-g-pvo.ok{border-color:#2F9E5B;color:#2F9E5B}
-.mm-g-pv-order{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-.mm-g-pvbank{display:flex;gap:6px}
-.mm-g-pvchip{height:34px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(0,0,0,.12);display:inline-flex;align-items:center;font-size:19px}
-.mm-g-pvline{display:flex;gap:6px;font-size:19px}
-.mm-g-pvline .mm-slot{margin:0;min-width:3.4em}
+.mm-g-pv{height:200px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center}
+.mm-g-pv.col{flex-direction:column;gap:18px}
+.mm-g-pvgrid{display:grid;grid-template-columns:repeat(3,52px);grid-auto-rows:52px;gap:9px}
+.mm-g-pvsq{border-radius:13px;background:#F2F2F2}
+.mm-g-pvsq.on{background:#fff;box-shadow:inset 0 0 0 2px #000}
+.mm-g-pvbox{width:84px;height:56px;border-radius:15px;background:#F2F2F2}
+.mm-g-pvopts{display:grid;grid-template-columns:repeat(2,100px);gap:9px}
+.mm-g-pvpill{height:26px;border-radius:999px;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.14)}
+.mm-g-pvpill.on{box-shadow:inset 0 0 0 2px #000}
+.mm-g-pvrow{display:flex;gap:8px}
+.mm-g-pvrow.end{align-items:flex-end}
+.mm-g-pvchip{width:50px;height:28px;border-radius:999px;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.14)}
+.mm-g-pvslot{width:64px;height:38px;border-radius:12px;border:1.5px dashed rgba(0,0,0,.25);box-sizing:border-box}
+.mm-g-pvslot.on{border:0;box-shadow:inset 0 0 0 2px #000}
+.mm-g-pvdot{width:7px;height:7px;border-radius:999px;background:#000;margin:0 0 3px 7px}
 @media (max-width:860px){.mm-g-tiles{grid-template-columns:minmax(0,1fr)}}
 /* «Найди пару» */
 .mm-g-pairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -68689,8 +68646,9 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-g-drag{position:fixed;z-index:80;pointer-events:none;cursor:grabbing;border-color:#000;box-shadow:0 10px 24px rgba(0,0,0,.16);margin:0}
 .mm-g-line{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 0;font-size:30px;color:#000}
 .mm-g-slot{position:relative;min-width:3.8em;height:1.7em;margin:0 .22em}
-.mm-g-end{position:absolute;left:100%;bottom:.12em;margin-left:.12em;color:#000;font-size:1em;line-height:1}
-.mm-g-end .mm-p{margin:0}
+.mm-g-end{position:absolute;left:100%;top:50%;transform:translateY(-50%);color:#000;line-height:1;font-weight:400;pointer-events:none}
+.mm-g-end.q{margin-left:.42em;font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:1.28em}
+.mm-g-end.dot{margin-left:.24em;margin-top:.24em;font-family:"ZhongYi KaiTi",KaiTi,"Kaiti SC",STKaiti,"PingFang SC","Noto Sans SC",sans-serif;font-size:1.38em}
 /* итог */
 .mm-g-res{align-items:flex-start;gap:18px;padding:32px 34px}
 .mm-g-big{font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:72px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
