@@ -65329,6 +65329,8 @@ function MaoMat_openLesson(nav, L) {
   MaoMat_setClips(L);
   nav.push({ render: () => c.jsx(MaoMat_LessonScreen, { lesson: L }) });
 }
+/* Кнопка «На экран» скрыта (не используется); сам режим MaoMat_Present остаётся в коде — вернуть: true */
+const MaoMat_SHOW_PRESENT = !1;
 function MaoMat_LessonScreen({ lesson: L }) {
   const nav = vn();
   const box = H.useRef(null);
@@ -65480,7 +65482,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
                     style: { height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500 },
                     children: [c.jsx(MaoMat_GIcon, { id: "btn", size: 16 }, "i"), "Игры"],
                   }),
-                  wide && c.jsxs("button", {
+                  MaoMat_SHOW_PRESENT && wide && c.jsxs("button", {
                     type: "button",
                     onClick: () => (MaoMat_stop(), setPresent(!0)),
                     title: "Урок на экране: по одному слайду, крупно — для демонстрации экрана",
