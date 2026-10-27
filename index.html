@@ -65340,6 +65340,8 @@ function MaoMat_LessonScreen({ lesson: L }) {
   const [focus, setFocus] = H.useState(null);
   const [word, setWord] = H.useState(null);
   const [present, setPresent] = H.useState(!1);
+  const [games, setGames] = H.useState(!1);
+  const gamesOk = H.useMemo(() => MaoMat_hasGames(L), [L]);
   H.useEffect(() => ((MaoMat_wordOpener = setWord), () => { MaoMat_wordOpener === setWord && (MaoMat_wordOpener = null); }), []);
   const secRef = H.useRef(sec);
   secRef.current = sec;
@@ -65375,11 +65377,11 @@ function MaoMat_LessonScreen({ lesson: L }) {
   }, []);
   H.useEffect(() => {
     const k = (e) => {
-      e.key === "Escape" && focus === null && !word && !present && !document.fullscreenElement && nav.pop();
+      e.key === "Escape" && focus === null && !word && !present && !games && !document.fullscreenElement && nav.pop();
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [focus, word, present]);
+  }, [focus, word, present, games]);
   const allWords = L.words.concat(L.names);
   const wordKeys = allWords.map((w) => "w:" + w.h);
   const gramKeys = [];
@@ -65470,6 +65472,14 @@ function MaoMat_LessonScreen({ lesson: L }) {
                     children: L.num ? "Урок " + L.num + " · " + (L.titleRu || L.title) : "Повторение · " + (L.titleRu || L.title),
                   }),
                   c.jsx("div", { className: "flex-1 min-w-0 flex lg:justify-end", children: pills }),
+                  wide && gamesOk && c.jsxs("button", {
+                    type: "button",
+                    onClick: () => (MaoMat_stop(), setGames(!0)),
+                    title: "Игры по словам и предложениям урока",
+                    className: "shrink-0 flex items-center gap-1.5 rounded-full bg-[#F2F2F2] whitespace-nowrap",
+                    style: { height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500 },
+                    children: [c.jsx(MaoMat_GIcon, { id: "btn", size: 16 }, "i"), "Игры"],
+                  }),
                   wide && c.jsxs("button", {
                     type: "button",
                     onClick: () => (MaoMat_stop(), setPresent(!0)),
@@ -65542,6 +65552,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
       ),
       word && c.jsx(MaoMat_WordSheet, { t: word, onClose: () => setWord(null) }),
       present && c.jsx(MaoMat_Present, { L, onClose: () => (MaoMat_stop(), setPresent(!1)) }),
+      games && c.jsx(MaoMat_Games, { L, onClose: () => setGames(!1) }),
     ],
   });
 }
@@ -66176,6 +66187,578 @@ function MaoMat_Present({ L, onClose }) {
         }),
       ],
     }),
+    Ac(),
+  );
+}
+/* ===== Игры урока: «Найди пару», «Викторина на время», «Собери предложение».
+   Открываются кнопкой «Игры» в верхней панели урока. Слова — из урока, предложения — из реплик текстов
+   и примеров грамматики (ничего не придумываем). Тёмная тема — общим фильтром приложения. ===== */
+const MaoMat_GAMES = [
+  { id: "pairs", name: "Найди пару" },
+  { id: "quiz", name: "Викторина на время" },
+  { id: "order", name: "Собери предложение" },
+];
+const MaoMat_G_PU = /[，。？！、：；（）《》“”‘’…·?!,.:;()]/;
+const MG = (t, p, ch, k) => (Array.isArray(ch) ? c.jsxs : c.jsx)(t, ch === void 0 ? p : { ...p, children: ch }, k);
+const MaoMat_gShuffle = (a) => {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const MaoMat_gRu = (r) => String(r || "").replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").replace(/\s+([,.;])/g, "$1").trim();
+const MaoMat_gTime = (s) => {
+  s = Math.max(0, Math.round(s));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+};
+const MaoMat_gFs = (n) => "min(" + n + "px, " + (n / 8.4).toFixed(1) + "vh)";
+function MaoMat_gLessons(L, scope) {
+  if (scope !== "upto" || !L.num || !L.key) return [L];
+  const pre = L.key.split(":")[0];
+  const out = [];
+  for (let n = 1; n <= L.num; n++) {
+    const x = n === L.num ? L : MaoMat_READY[pre + ":" + n];
+    x && out.push(x);
+  }
+  return out.length ? out : [L];
+}
+function MaoMat_gWords(lessons) {
+  const seen = new Set();
+  const out = [];
+  lessons.forEach((x) =>
+    (x.words || []).forEach((w) => {
+      const ru = MaoMat_gRu(w.ru);
+      if (!w.h || !ru || seen.has(w.h)) return;
+      seen.add(w.h);
+      out.push({ h: w.h, py: w.py || "", ru, full: w.ru });
+    }),
+  );
+  return out;
+}
+/* слова с разными переводами — чтобы в паре и в вариантах ответа не было двух одинаковых */
+function MaoMat_gDistinct(words) {
+  const seen = new Set();
+  return words.filter((w) => (seen.has(w.ru) ? !1 : (seen.add(w.ru), !0)));
+}
+/* словарь всех слов из готовых уроков — чтобы склеивать 老+师 → 老师 и резать примеры грамматики на слова */
+let MaoMat_gDicCache = null;
+function MaoMat_gDic() {
+  if (MaoMat_gDicCache) return MaoMat_gDicCache;
+  const d = new Set();
+  Object.keys(MaoMat_READY).forEach((k) => {
+    const x = MaoMat_READY[k];
+    ((x && x.words) || []).concat((x && x.names) || []).forEach((w) => w && w.h && !/[…\s]/.test(w.h) && d.add(w.h));
+  });
+  return (MaoMat_gDicCache = d);
+}
+function MaoMat_gMerge(t, dic) {
+  const r = [];
+  for (let i = 0; i < t.length; ) {
+    let n = 1;
+    for (let m = Math.min(4, t.length - i); m > 1; m--) {
+      const j = t.slice(i, i + m).join("");
+      if (j.length <= 5 && dic.has(j)) {
+        n = m;
+        break;
+      }
+    }
+    r.push(t.slice(i, i + n).join(""));
+    i += n;
+  }
+  return r;
+}
+const MaoMat_gCleanRu = (ru) => String(ru || "").replace(/([.!?…])\s+—\s+.*$/, "$1").trim();
+function MaoMat_gSents(lessons) {
+  const dic = new Set(MaoMat_gDic());
+  lessons.forEach((x) => (x.words || []).concat(x.names || []).forEach((w) => w.h && dic.add(w.h)));
+  const out = [];
+  const seen = new Set();
+  const add = (t, end, ru) => {
+    t = MaoMat_gMerge(t.filter(Boolean), dic);
+    ru = MaoMat_gCleanRu(ru);
+    if (!end || !ru || t.length < 3 || t.length > 6 || t.some((x) => x.length > 5)) return;
+    const zh = t.join("");
+    if (zh.length > 16 || seen.has(zh)) return;
+    seen.add(zh);
+    out.push({ t, end, ru, zh });
+  };
+  const bad = (s) => MaoMat_G_PU.test(s) || /[A-Za-zА-яЁё0-9\s_\/\[\]{}<>*#=|~^…—-]/.test(s);
+  lessons.forEach((x) => {
+    (x.texts || []).forEach((tx) =>
+      (tx.lines || []).forEach((l) => {
+        if (!Array.isArray(l) || l.length < 3) return;
+        const zh = l.length >= 4 ? l[1] : l[0];
+        const ru = l[l.length - 1];
+        const toks = String(zh || "")
+          .split(/\s+/)
+          .map((s) => s.replace(/=\S*/, ""))
+          .filter(Boolean);
+        let end = "";
+        const last = toks[toks.length - 1];
+        if (last && last.length === 1 && "。？！".includes(last)) end = toks.pop();
+        if (!toks.length || toks.some(bad)) return;
+        add(toks, end, ru);
+      }),
+    );
+    (x.grammar || []).forEach((g) =>
+      (g.blocks || []).forEach((b) =>
+        (b.ex || []).forEach((ex) => {
+          let s = String(ex[0] || "");
+          let end = "";
+          const last = s.slice(-1);
+          if ("。？！".includes(last) && last) (end = last), (s = s.slice(0, -1));
+          if (!s || bad(s)) return;
+          const t = [];
+          let i = 0;
+          while (i < s.length) {
+            let k = Math.min(5, s.length - i);
+            for (; k > 1; k--) if (dic.has(s.slice(i, i + k))) break;
+            t.push(s.slice(i, i + k));
+            i += k;
+          }
+          add(t, end, ex[2]);
+        }),
+      ),
+    );
+  });
+  return out;
+}
+function MaoMat_GIcon({ id, size = 24, color = "currentColor" }) {
+  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
+  if (id === "pairs") return MG("svg", p, [MG("rect", { x: 3, y: 7, width: 11, height: 14, rx: 2.5 }, void 0, "a"), MG("path", { d: "M10 3h8.5A2.5 2.5 0 0 1 21 5.5V17" }, void 0, "b")]);
+  if (id === "quiz") return MG("svg", p, [MG("circle", { cx: 12, cy: 13, r: 8 }, void 0, "a"), MG("path", { d: "M12 9v4l2.5 2.5M9 2h6" }, void 0, "b")]);
+  if (id === "order")
+    return MG("svg", p, [
+      MG("rect", { x: 3, y: 4, width: 8, height: 6, rx: 2 }, void 0, "a"),
+      MG("rect", { x: 13, y: 4, width: 8, height: 6, rx: 2 }, void 0, "b"),
+      MG("rect", { x: 3, y: 14, width: 18, height: 6, rx: 2 }, void 0, "c"),
+    ]);
+  /* значок кнопки «Игры» */
+  return MG("svg", p, [MG("rect", { x: 2, y: 6.5, width: 20, height: 11, rx: 5.5 }, void 0, "a"), MG("path", { d: "M7 10.2v3.6M5.2 12h3.6M15.5 11.2h.01M18 13h.01" }, void 0, "b")]);
+}
+function MaoMat_GChip({ children, dark }) {
+  return MG("div", { className: "mm-g-chip" + (dark ? " dark" : "") }, children);
+}
+function MaoMat_GBtn({ children, onClick, ghost, autoFocus }) {
+  return MG("button", { type: "button", onClick, autoFocus, className: "mm-g-btn" + (ghost ? " ghost" : "") }, children);
+}
+
+/* ---------- «Найди пару» ---------- */
+function MaoMat_GPairs({ words, only, onDone }) {
+  const [cards] = H.useState(() => {
+    const pool = MaoMat_gDistinct(words);
+    let ws = only ? pool.filter((w) => only.includes(w.h)) : [];
+    ws = ws.concat(MaoMat_gShuffle(pool.filter((w) => !ws.includes(w)))).slice(0, 8);
+    return { ws, list: MaoMat_gShuffle(ws.flatMap((w, i) => [{ id: i, zh: !0, w }, { id: i, zh: !1, w }])) };
+  });
+  const [up, setUp] = H.useState([]);
+  const [done, setDone] = H.useState({});
+  const [bad, setBad] = H.useState([]);
+  const [tries, setTries] = H.useState(0);
+  const wrong = H.useRef(new Set());
+  const t0 = H.useRef(Date.now());
+  const [, tick] = H.useState(0);
+  const lock = H.useRef(!1);
+  H.useEffect(() => {
+    const t = setInterval(() => tick((x) => x + 1), 500);
+    return () => clearInterval(t);
+  }, []);
+  const timers = H.useRef([]);
+  H.useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const later = (f, ms) => timers.current.push(setTimeout(f, ms));
+  const n = cards.ws.length;
+  const found = Object.keys(done).length / 2;
+  const flip = (i) => {
+    if (lock.current || up.includes(i) || done[i]) return;
+    const nu = up.concat(i);
+    setUp(nu);
+    if (nu.length < 2) return;
+    lock.current = !0;
+    setTries((x) => x + 1);
+    const [a, b] = nu;
+    if (cards.list[a].id === cards.list[b].id) {
+      const nd = { ...done, [a]: 1, [b]: 1 };
+      const all = Object.keys(nd).length / 2 === n;
+      const tr = tries + 1;
+      later(() => {
+        setDone(nd);
+        setUp([]);
+        lock.current = !1;
+        all &&
+          later(
+            () =>
+              onDone({
+                score: MaoMat_gTime((Date.now() - t0.current) / 1000),
+                stats: [["Попыток", tr], ["Пар", n]],
+                errors: cards.ws.filter((w) => wrong.current.has(w.h)),
+              }),
+            650,
+          );
+      }, 260);
+    } else {
+      wrong.current.add(cards.list[a].w.h);
+      wrong.current.add(cards.list[b].w.h);
+      later(() => setBad([a, b]), 180);
+      later(() => {
+        setBad([]);
+        setUp([]);
+        lock.current = !1;
+      }, 1050);
+    }
+  };
+  return MG("div", { className: "mm-g-play" }, [
+    MG("div", { className: "mm-g-status" }, [
+      MG(MaoMat_GChip, {}, [MG(MaoMat_GIcon, { id: "quiz", size: 17 }, void 0, "i"), MaoMat_gTime((Date.now() - t0.current) / 1000)], "t"),
+      MG(MaoMat_GChip, { dark: !0 }, found + " / " + n, "n"),
+    ], "s"),
+    MG(
+      "div",
+      { className: "mm-g-pairs" + (n > 6 ? "" : " few") },
+      cards.list.map((cd, i) => {
+        const st = done[i] ? "done" : bad.includes(i) ? "bad" : up.includes(i) ? "up" : "";
+        return MG(
+          "button",
+          { type: "button", onClick: () => flip(i), className: "mm-g-card " + st + (st === "bad" ? " mm-shake" : ""), "aria-label": st ? (cd.zh ? cd.w.h : cd.w.ru) : "Карточка " + (i + 1) },
+          st ? MG("span", cd.zh ? { className: "mm-zh", style: { fontSize: MaoMat_gFs(46), color: "inherit", lineHeight: 1.15 } } : { className: "mm-g-cardru" }, cd.zh ? cd.w.h : cd.w.ru) : null,
+          i,
+        );
+      }),
+      "g",
+    ),
+  ]);
+}
+
+/* ---------- «Викторина на время» ---------- */
+const MaoMat_G_SEC = 10;
+function MaoMat_GQuiz({ words, only, onDone }) {
+  const [qs] = H.useState(() => MaoMat_gShuffle(only ? words.filter((w) => only.includes(w.h)) : words).slice(0, 20));
+  const pool = H.useMemo(() => MaoMat_gDistinct(words), [words]);
+  const [qi, setQi] = H.useState(0);
+  const [pick, setPick] = H.useState(null);
+  const st = H.useRef({ score: 0, streak: 0, best: 0, errors: [], t0: Date.now() });
+  const [, force] = H.useState(0);
+  const w = qs[qi];
+  const opts = H.useMemo(() => {
+    if (!w) return [];
+    const o = [w];
+    for (const x of MaoMat_gShuffle(pool)) {
+      if (o.length === 4) break;
+      if (x.ru !== w.ru && !o.some((y) => y.ru === x.ru)) o.push(x);
+    }
+    return MaoMat_gShuffle(o);
+  }, [qi]);
+  const right = opts.indexOf(w);
+  const finish = () =>
+    onDone({
+      score: st.current.score,
+      total: qs.length,
+      stats: [["Время", MaoMat_gTime((Date.now() - st.current.t0) / 1000)], ["Лучшая серия", st.current.best]],
+      errors: st.current.errors,
+    });
+  const answer = (i) => {
+    if (pick !== null || !w) return;
+    setPick(i);
+    const s = st.current;
+    if (i === right) (s.score++, s.streak++, (s.best = Math.max(s.best, s.streak)));
+    else (s.streak = 0), s.errors.push(w);
+    force((x) => x + 1);
+  };
+  H.useEffect(() => {
+    if (!w) return;
+    if (pick === null) {
+      const t = setTimeout(() => answer(-1), MaoMat_G_SEC * 1000);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => (qi + 1 >= qs.length ? finish() : (setQi(qi + 1), setPick(null))), pick === right ? 750 : 1400);
+    return () => clearTimeout(t);
+  }, [qi, pick]);
+  H.useEffect(() => {
+    const k = (e) => {
+      const n = "1234".indexOf(e.key);
+      const m = n >= 0 ? n : "abcd".indexOf(String(e.key).toLowerCase());
+      m >= 0 && m < opts.length && (e.preventDefault(), answer(m));
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [qi, pick, opts]);
+  if (!w) return null;
+  return MG("div", { className: "mm-g-play" }, [
+    MG("div", { className: "mm-g-status" }, [
+      MG(MaoMat_GChip, {}, "Серия " + st.current.streak, "s"),
+      MG(MaoMat_GChip, { dark: !0 }, qi + 1 + " / " + qs.length, "n"),
+    ], "s"),
+    MG("div", { className: "mm-g-bar" + (pick !== null ? " stop" : "") }, MG("i", { style: { animationDuration: MaoMat_G_SEC + "s, " + MaoMat_G_SEC + "s" } }), "b" + qi),
+    MG("div", { className: "mm-g-center" }, [
+      MG("div", { className: "mm-g-qcard" }, MG("span", { className: "mm-zh", style: { fontSize: MaoMat_gFs(120), lineHeight: 1.05, textAlign: "center" } }, w.h), "c"),
+      MG(
+        "div",
+        { className: "mm-g-opts" },
+        opts.map((o, i) => {
+          const cls = pick === null ? "" : i === right ? " ok" : i === pick ? " bad mm-shake" : " off";
+          return MG("button", { type: "button", onClick: () => answer(i), className: "mm-g-opt" + cls, disabled: pick !== null }, [MG("span", { className: "mm-g-k" }, "ABCD"[i], "k"), MG("span", {}, o.ru, "t")], o.h);
+        }),
+        "o",
+      ),
+    ], "m"),
+  ]);
+}
+
+/* ---------- «Собери предложение» ---------- */
+function MaoMat_GOrder({ sents, words, only, onDone }) {
+  const [rounds] = H.useState(() => MaoMat_gShuffle(only ? sents.filter((s) => only.includes(s.zh)) : sents).slice(0, 8));
+  const [ri, setRi] = H.useState(0);
+  const s = rounds[ri];
+  const pieces = H.useMemo(() => {
+    if (!s) return [];
+    const extra = MaoMat_gShuffle(words.map((w) => w.h).filter((h) => !s.t.includes(h) && h.length <= 3 && !MaoMat_G_PU.test(h) && !/[…\s]/.test(h)))[0];
+    return MaoMat_gShuffle(s.t.concat(extra ? [extra] : []));
+  }, [ri]);
+  const [filled, setFilled] = H.useState({});
+  const [used, setUsed] = H.useState({});
+  const [bad, setBad] = H.useState(null);
+  const [drag, setDrag] = H.useState(null);
+  const [over, setOver] = H.useState(-1);
+  const slotRefs = H.useRef([]);
+  const st = H.useRef({ clean: 0, errors: [], err: !1 });
+  const timers = H.useRef([]);
+  H.useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const later = (f, ms) => timers.current.push(setTimeout(f, ms));
+  H.useEffect(() => {
+    setFilled({});
+    setUsed({});
+    setBad(null);
+    st.current.err = !1;
+  }, [ri]);
+  const slotAt = (x, y) =>
+    slotRefs.current.findIndex((el, i) => {
+      if (!el || filled[i]) return !1;
+      const b = el.getBoundingClientRect();
+      const pad = 22;
+      return x > b.left - pad && x < b.right + pad && y > b.top - pad && y < b.bottom + pad;
+    });
+  const drop = (k, x, y) => {
+    const si = slotAt(x, y);
+    if (si < 0) return;
+    if (pieces[k] === s.t[si]) {
+      const nf = { ...filled, [si]: 1 };
+      setFilled(nf);
+      setUsed((u) => ({ ...u, [k]: 1 }));
+      if (Object.keys(nf).length === s.t.length) {
+        st.current.err ? st.current.errors.push(s) : st.current.clean++;
+        later(() => {
+          if (ri + 1 >= rounds.length)
+            onDone({ score: st.current.clean, total: rounds.length, errors: st.current.errors, kind: "sent" });
+          else setRi(ri + 1);
+        }, 900);
+      }
+    } else {
+      st.current.err = !0;
+      setBad({ si, k, n: Date.now() });
+      later(() => setBad(null), 520);
+    }
+  };
+  H.useEffect(() => {
+    if (!drag) return;
+    const mv = (e) => {
+      setDrag((d) => d && { ...d, x: e.clientX, y: e.clientY });
+      setOver(slotAt(e.clientX, e.clientY));
+    };
+    const upH = (e) => {
+      const k = drag.k;
+      setDrag(null);
+      setOver(-1);
+      drop(k, e.clientX, e.clientY);
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", upH);
+    window.addEventListener("pointercancel", upH);
+    return () => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", upH);
+      window.removeEventListener("pointercancel", upH);
+    };
+  }, [drag && drag.k, filled, ri]);
+  if (!s) return null;
+  const start = (k) => (e) => {
+    if (used[k] || drag) return;
+    e.preventDefault();
+    const b = e.currentTarget.getBoundingClientRect();
+    setDrag({ k, x: e.clientX, y: e.clientY, dx: e.clientX - b.left, dy: e.clientY - b.top, w: b.width, h: b.height });
+  };
+  return MG("div", { className: "mm-g-play" }, [
+    MG("div", { className: "mm-g-status" }, MG(MaoMat_GChip, { dark: !0 }, ri + 1 + " / " + rounds.length), "s"),
+    MG("div", { className: "mm-g-center" }, [
+      MG("div", { className: "mm-g-sru" }, s.ru, "r"),
+      MG("div", { className: "mm-g-slots" }, [
+        ...s.t.map((t, i) =>
+          MG(
+            "div",
+            {
+              ref: (el) => (slotRefs.current[i] = el),
+              className: "mm-g-slot" + (filled[i] ? " ok" : bad && bad.si === i ? " bad mm-shake" : over === i ? " hov" : ""),
+            },
+            filled[i] ? MG("span", { className: "mm-zh", style: { fontSize: "inherit", color: "inherit" } }, t) : null,
+            "sl" + i,
+          ),
+        ),
+        s.end ? MG("span", { className: "mm-g-end" }, s.end, "e") : null,
+      ], "sl"),
+      MG(
+        "div",
+        { className: "mm-g-bank" },
+        pieces.map((p, k) =>
+          MG(
+            "div",
+            {
+              onPointerDown: start(k),
+              className: "mm-g-piece mm-zh" + (used[k] || Object.keys(filled).length === s.t.length ? " used" : drag && drag.k === k ? " lift" : bad && bad.k === k ? " bad mm-shake" : ""),
+              "aria-hidden": used[k] ? "true" : void 0,
+            },
+            p,
+            ri + "_" + k,
+          ),
+        ),
+        "b",
+      ),
+    ], "m"),
+    drag &&
+      MG(
+        "div",
+        { className: "mm-g-piece mm-zh mm-g-drag", style: { left: drag.x - drag.dx, top: drag.y - drag.dy, width: drag.w, height: drag.h } },
+        pieces[drag.k],
+        "drag",
+      ),
+  ]);
+}
+
+/* ---------- Итог ---------- */
+function MaoMat_GResult({ game, r, onAgain, onErrors, onMenu }) {
+  const errs = r.errors || [];
+  return MG("div", { className: "mm-g-play" }, [
+    MG("div", { className: "mm-g-res" }, [
+      MG("div", { className: "mm-g-rpanel" }, [
+        MG("div", { className: "mm-g-big" }, [r.score, r.total != null ? MG("small", {}, " / " + r.total, "t") : null], "b"),
+        (r.stats || []).length
+          ? MG(
+              "div",
+              { className: "mm-g-stats" },
+              r.stats.map(([a, b]) => MG("div", { className: "mm-g-stat" }, [MG("span", {}, a, "a"), MG("b", {}, b, "b")], a)),
+              "s",
+            )
+          : null,
+        MG("div", { className: "mm-g-rbtns" }, [
+          MG(MaoMat_GBtn, { onClick: onAgain }, "Сыграть ещё", "a"),
+          MG(MaoMat_GBtn, { onClick: onMenu, ghost: !0 }, "Другая игра", "m"),
+        ], "r"),
+      ], "p"),
+      MG("div", { className: "mm-g-rlist" }, [
+        MG("div", { className: "mm-g-rlh" }, [MG("b", {}, "Ошибки", "h"), errs.length ? MG("button", { type: "button", onClick: onErrors, className: "mm-g-chip mm-g-chipbtn" }, "Повторить ошибки", "e") : null], "h"),
+        errs.length
+          ? errs.map((e, i) =>
+              r.kind === "sent"
+                ? MG("div", { className: "mm-g-err s" }, [MG("span", { className: "mm-zh", style: { fontSize: 32, lineHeight: 1.3 } }, MaoMat_Z(e.zh + e.end), "z"), MG("span", { className: "mm-g-errru" }, e.ru, "r")], "e" + i)
+                : MG("div", { className: "mm-g-err" }, [MG("span", { className: "mm-zh", style: { fontSize: 38, lineHeight: 1.15 } }, e.h, "z"), MG("span", { className: "mm-g-errpy" }, e.py, "p"), MG("span", { className: "mm-g-errru" }, e.full || e.ru, "r")], "e" + i),
+            )
+          : MG("div", { className: "mm-g-clean" }, "Без ошибок", "c"),
+      ], "l"),
+    ], "res"),
+  ]);
+}
+
+/* ---------- Оверлей игр ---------- */
+function MaoMat_gAvail(words, sents) {
+  return { pairs: MaoMat_gDistinct(words).length >= 3, quiz: MaoMat_gDistinct(words).length >= 4, order: sents.length >= 3 };
+}
+function MaoMat_hasGames(L) {
+  const w = MaoMat_gWords([L]);
+  const a = MaoMat_gAvail(w, MaoMat_gSents([L]));
+  return a.pairs || a.quiz || a.order;
+}
+function MaoMat_Games({ L, onClose }) {
+  const [scope, setScope] = H.useState(() => MaoMat_state["g:scope"] || "one");
+  const [view, setView] = H.useState({ s: "menu" });
+  const [run, setRun] = H.useState(0);
+  const lessons = H.useMemo(() => MaoMat_gLessons(L, scope), [L, scope]);
+  const words = H.useMemo(() => MaoMat_gWords(lessons), [lessons]);
+  const sents = H.useMemo(() => MaoMat_gSents(lessons), [lessons]);
+  const avail = MaoMat_gAvail(words, sents);
+  const games = MaoMat_GAMES.filter((g) => avail[g.id]);
+  const upto = L.num > 1 && !!L.key;
+  const g = view.g && MaoMat_GAMES.find((x) => x.id === view.g);
+  const setSc = (v) => ((MaoMat_state["g:scope"] = v), setScope(v));
+  const play = (id, only) => (setRun((x) => x + 1), setView({ s: "play", g: id, only }));
+  H.useEffect(() => {
+    const k = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        view.s === "menu" ? onClose() : setView({ s: "menu" });
+      } else if (e.key === "Enter" && view.s === "intro") {
+        e.preventDefault();
+        play(view.g);
+      }
+    };
+    window.addEventListener("keydown", k, !0);
+    return () => window.removeEventListener("keydown", k, !0);
+  }, [view]);
+  const label = scope === "upto" && upto ? "Уроки 1–" + L.num : L.num ? "Урок " + L.num : "Повторение";
+  let body = null;
+  if (view.s === "menu")
+    body = MG("div", { className: "mm-g-center" }, [
+      upto &&
+        MG("div", { className: "mm-g-seg", role: "group", "aria-label": "Слова для игр" }, [
+          MG("button", { type: "button", "aria-pressed": scope === "one", onClick: () => setSc("one") }, "Этот урок", "a"),
+          MG("button", { type: "button", "aria-pressed": scope === "upto", onClick: () => setSc("upto") }, "Уроки 1–" + L.num, "b"),
+        ], "seg"),
+      MG(
+        "div",
+        { className: "mm-g-tiles" },
+        games.map((x) =>
+          MG("button", { type: "button", className: "mm-g-tile", onClick: () => setView({ s: "intro", g: x.id }) }, [
+            MG("span", { className: "mm-g-ic" }, MG(MaoMat_GIcon, { id: x.id, size: 30 }), "i"),
+            MG("span", { className: "mm-g-nm" }, x.name, "n"),
+          ], x.id),
+        ),
+        "t",
+      ),
+    ]);
+  else if (view.s === "intro")
+    body = MG("div", { className: "mm-g-center mm-g-intro" }, [
+      MG("span", { className: "mm-g-ic big" }, MG(MaoMat_GIcon, { id: view.g, size: 46 }), "i"),
+      MG("div", { className: "mm-g-introt" }, g.name, "t"),
+      MG(MaoMat_GBtn, { onClick: () => play(view.g) }, "Начать", "b"),
+    ]);
+  else if (view.s === "play") {
+    const done = (r) => setView({ s: "result", g: view.g, r, only: view.only });
+    const P = { words, sents, only: view.only, onDone: done };
+    body = view.g === "pairs" ? MG(MaoMat_GPairs, P, void 0, "p" + run) : view.g === "quiz" ? MG(MaoMat_GQuiz, P, void 0, "q" + run) : MG(MaoMat_GOrder, P, void 0, "o" + run);
+  } else if (view.s === "result")
+    body = MG(MaoMat_GResult, {
+      game: view.g,
+      r: view.r,
+      onAgain: () => play(view.g),
+      onMenu: () => setView({ s: "menu" }),
+      onErrors: () => play(view.g, view.r.errors.map((e) => (view.r.kind === "sent" ? e.zh : e.h))),
+    });
+  return Dc.createPortal(
+    MG("div", { className: "mm-layer mm-g", role: "dialog", "aria-label": "Игры" }, [
+      MG("header", { className: "mm-g-head" }, [
+        MG(
+          "button",
+          { type: "button", onClick: view.s === "menu" ? onClose : () => setView({ s: "menu" }), "aria-label": view.s === "menu" ? "Закрыть игры" : "К списку игр", className: "mm-g-x" },
+          view.s === "menu"
+            ? MG("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#000", strokeWidth: 2, strokeLinecap: "round" }, MG("path", { d: "M18 6 6 18M6 6l12 12" }))
+            : MG("svg", { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "#000", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" }, MG("path", { d: "M15 6l-6 6 6 6" })),
+          "x",
+        ),
+        MG("div", { className: "mm-g-htxt" }, [
+          MG("div", { className: "mm-g-hsub" }, label + (L.titleRu ? " · " + L.titleRu : ""), "s"),
+          MG("div", { className: "mm-g-htitle" }, g ? g.name : "Игры", "t"),
+        ], "h"),
+      ], "head"),
+      MG("div", { className: "mm-g-body" }, body, "body"),
+    ]),
     Ac(),
   );
 }
@@ -67957,6 +68540,103 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .theme-dark .mm-opt,.theme-dark .mm-hint,.theme-dark .mm-letter{border-color:rgba(0,0,0,.26)}
 .theme-dark .mm-w:hover{background:rgba(0,0,0,.12)}
 .theme-dark .mm-arrow{opacity:.75}
+
+.mm-g{position:fixed;inset:0;z-index:60;background:#fff;color:#000;display:flex;flex-direction:column;font-family:Inter,-apple-system,"Segoe UI",sans-serif}
+.mm-g-head{min-height:72px;box-sizing:border-box;padding:10px 32px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #EEEEEE}
+.mm-g-x{width:40px;height:40px;border-radius:999px;border:1px solid #E5E5E5;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.mm-g-x:hover{border-color:#000}
+.mm-g-htxt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.mm-g-hsub{font-size:13px;font-weight:600;color:rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-g-htitle{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-g-body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.mm-g-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:22px;width:100%;max-width:1180px;margin:0 auto;padding:24px 32px 32px;box-sizing:border-box}
+.mm-g-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(44px,5vh);padding:24px 32px;box-sizing:border-box;width:100%}
+.mm-g-play .mm-g-center{padding:0}
+.mm-g-status{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.mm-g-chip{height:44px;padding:0 18px;border-radius:999px;background:#F5F5F5;display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:#000}
+.mm-g-chip.dark{background:#000;color:#fff}
+.mm-g-chipbtn{border:0;cursor:pointer;font-family:inherit}
+.mm-g-chipbtn:hover{background:#EEEEEE}
+.mm-g-btn{height:60px;min-width:220px;padding:0 32px;border-radius:999px;border:0;background:#000;color:#fff;font-family:inherit;font-size:19px;font-weight:600;cursor:pointer;transition:transform .15s}
+.mm-g-btn.ghost{background:#fff;color:#000;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.14)}
+.mm-g-btn:active{transform:scale(.97)}
+.mm-g button:focus-visible{outline:3px solid #2F9E5B;outline-offset:3px}
+/* меню и заставка */
+.mm-g-seg{display:inline-flex;background:#EEEEEE;border-radius:999px;padding:4px;gap:2px}
+.mm-g-seg button{height:40px;padding:0 20px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-size:15px;font-weight:600;color:rgba(0,0,0,.55);cursor:pointer;font-variant-numeric:tabular-nums}
+.mm-g-seg button[aria-pressed="true"]{background:#fff;color:#000;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.mm-g-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;width:100%;max-width:980px}
+.mm-g-tile{border:0;background:#F5F5F5;border-radius:28px;padding:30px 28px;min-height:220px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:24px;text-align:left;cursor:pointer;font-family:inherit;color:#000;transition:background-color .15s,transform .15s}
+.mm-g-tile:hover{background:#EEEEEE}
+.mm-g-tile:active{transform:scale(.98)}
+.mm-g-ic{width:64px;height:64px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000}
+.mm-g-ic.big{width:120px;height:120px;background:#F5F5F5}
+.mm-g-nm{font-size:22px;font-weight:700;line-height:1.25}
+.mm-g-intro{gap:28px}
+.mm-g-introt{font-size:min(44px,6vh);font-weight:700;letter-spacing:-.01em;text-align:center;margin-bottom:10px}
+@media (max-width:760px){.mm-g-tiles{grid-template-columns:minmax(0,1fr)}.mm-g-tile{min-height:0;flex-direction:row;align-items:center}.mm-g-head,.mm-g-play{padding-left:16px;padding-right:16px}}
+/* «Найди пару» */
+.mm-g-pairs{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:16px;min-height:0}
+.mm-g-pairs.few{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mm-g-card{border:0;border-radius:22px;background:#000;min-height:92px;padding:10px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;color:#000;font-family:inherit;transition:background-color .2s,opacity .3s}
+.mm-g-card.up{background:#fff;box-shadow:inset 0 0 0 2px #000}
+.mm-g-card.done{background:#F0FAF4;color:#2F9E5B;opacity:.6;cursor:default}
+.mm-g-card.bad{background:#fff;box-shadow:inset 0 0 0 2.5px #E5484D;color:#E5484D}
+.mm-g-cardru{font-size:min(21px,2.6vh);font-weight:600;line-height:1.3}
+/* «Викторина» */
+.mm-g-bar{height:8px;border-radius:999px;background:#EEEEEE;overflow:hidden;flex-shrink:0}
+.mm-g-bar i{display:block;height:100%;border-radius:999px;background:#000;animation-name:mmgBar,mmgLow;animation-timing-function:linear,step-end;animation-fill-mode:forwards,forwards}
+.mm-g-bar.stop i{animation-play-state:paused}
+@keyframes mmgBar{from{width:100%}to{width:0}}
+@keyframes mmgLow{0%{background:#000}70%{background:#B35C00}100%{background:#B35C00}}
+.mm-g-qcard{width:min(560px,100%);min-height:min(250px,28vh);border-radius:32px;background:#F5F5F5;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.mm-g-opts{width:min(900px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mm-g-opt{min-height:76px;border:0;border-radius:999px;background:#F5F5F5;display:flex;align-items:center;gap:16px;padding:10px 28px;font-family:inherit;font-size:min(22px,2.8vh);font-weight:600;text-align:left;color:#000;cursor:pointer;transition:opacity .15s}
+.mm-g-opt:hover:not(:disabled){background:#EEEEEE}
+.mm-g-opt:disabled{cursor:default}
+.mm-g-k{width:34px;height:34px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.mm-g-opt.ok{background:#F0FAF4;color:#1F7A44;box-shadow:inset 0 0 0 2.5px #2F9E5B}
+.mm-g-opt.ok .mm-g-k{background:#2F9E5B;color:#fff}
+.mm-g-opt.bad{background:#E5484D;color:#fff}
+.mm-g-opt.bad .mm-g-k{background:rgba(255,255,255,.25);color:#fff}
+.mm-g-opt.off{opacity:.38}
+@media (max-width:640px){.mm-g-opts{grid-template-columns:minmax(0,1fr)}}
+/* «Собери предложение» */
+.mm-g-sru{font-size:min(30px,3.6vh);font-weight:600;color:rgba(0,0,0,.72);text-align:center;text-wrap:balance;max-width:900px}
+.mm-g-slots{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.mm-g-slot{width:140px;height:84px;border-radius:20px;box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.16);background:#fff;display:flex;align-items:center;justify-content:center;font-size:42px;box-sizing:border-box;transition:background-color .12s,box-shadow .12s}
+.mm-g-slot.hov{box-shadow:inset 0 0 0 2.5px #000;background:#F5F5F5}
+.mm-g-slot.ok{background:#F0FAF4;color:#1F7A44;box-shadow:none}
+.mm-g-slot.bad{box-shadow:inset 0 0 0 2.5px #E5484D;background:#FBE9E9}
+.mm-g-end{font-family:Inter,"PingFang SC","Noto Sans SC",sans-serif;font-size:42px;line-height:1;align-self:flex-end;margin:0 0 14px -4px}
+.mm-g-bank{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;min-height:76px}
+.mm-g-piece{height:76px;min-width:76px;padding:0 30px;box-sizing:border-box;border-radius:20px;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:38px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.mm-g-piece.used{visibility:hidden}
+.mm-g-piece.lift{opacity:.2}
+.mm-g-piece.bad{background:#E5484D}
+.mm-g-drag{position:fixed;z-index:70;pointer-events:none;cursor:grabbing;box-shadow:0 14px 24px rgba(0,0,0,.25);transform:rotate(-2deg)}
+@media (max-width:760px){.mm-g-slot{width:84px;height:64px;font-size:30px}.mm-g-piece{height:60px;padding:0 18px;font-size:28px}.mm-g-end{font-size:30px}}
+/* итог */
+.mm-g-res{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;margin:auto 0;width:100%}
+.mm-g-rpanel{flex:0 1 400px;min-width:0;border-radius:32px;background:#F5F5F5;padding:40px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:28px}
+.mm-g-big{font-size:96px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.mm-g-big small{font-size:44px;color:rgba(0,0,0,.32)}
+.mm-g-stats{display:flex;flex-direction:column;gap:12px}
+.mm-g-stat{display:flex;justify-content:space-between;font-size:19px}
+.mm-g-stat span{color:rgba(0,0,0,.55)}
+.mm-g-stat b{font-weight:600;font-variant-numeric:tabular-nums}
+.mm-g-rbtns{display:flex;flex-direction:column;gap:12px}
+.mm-g-rbtns .mm-g-btn{width:100%;min-width:0}
+.mm-g-rlist{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.mm-g-rlh{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.mm-g-rlh b{font-size:22px}
+.mm-g-err{border-radius:22px;background:#F5F5F5;padding:16px 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr);align-items:center;gap:16px}
+.mm-g-err.s{grid-template-columns:minmax(0,1fr);gap:4px}
+.mm-g-errpy{font-size:17px;color:rgba(0,0,0,.55)}
+.mm-g-errru{font-size:17px;font-weight:600;line-height:1.35}
+.mm-g-err.s .mm-g-errru{font-weight:500;color:rgba(0,0,0,.6)}
+.mm-g-clean{border-radius:22px;background:#F0FAF4;color:#1F7A44;padding:22px 24px;font-size:19px;font-weight:600}
+@media (max-width:760px){.mm-g-rpanel{padding:24px}.mm-g-big{font-size:64px}.mm-g-big small{font-size:30px}}
 </style>
 <style id="mm-glass">
 /* ===== Маомао look (1:1 with the app) ===== */
