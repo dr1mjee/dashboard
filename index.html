@@ -73704,11 +73704,14 @@ try {
    ставятся ровно поверх своих мест в сетке. Если поверх страницы открыто окно, меню
    или урок, слой прячется, и остаются обычные обложки. */
 function MaoMat_trueColorCovers() {
-  /* Точные цвета обложек в тёмной теме: копии обложек поверх, вне общего фильтра.
-     Пока страница прокручивается, копии спрятаны (видны обложки под фильтром) — так ничего не дрожит;
-     как только прокрутка остановилась, копии плавно появляются на месте. */
+  /* Точные цвета обложек в тёмной теме: копии обложек лежат поверх, вне общего фильтра.
+     Чтобы копии не отставали от прокрутки, слой с ними сдвигается анимацией, привязанной к прокрутке
+     (scroll-timeline) — браузер двигает его вместе со страницей, без участия скрипта.
+     Где такой анимации нет, копии на время прокрутки прячутся, как раньше. */
+  const live = !!(window.CSS && CSS.supports && CSS.supports("animation-timeline: --mmsc") && CSS.supports("timeline-scope: --mmsc"));
   let moving = !1, idle = 0;
   const onScroll = () => {
+    if (live) return;
     moving = !0;
     layer.style.transition = "none";
     layer.style.opacity = "0";
@@ -73718,11 +73721,21 @@ function MaoMat_trueColorCovers() {
     }, 160);
   };
   document.addEventListener("scroll", onScroll, { capture: !0, passive: !0 });
+  if (!document.getElementById("mm-tc-style")) {
+    const st = document.createElement("style");
+    st.id = "mm-tc-style";
+    st.textContent = "@keyframes mmTcScroll{from{transform:translateY(0)}to{transform:translateY(calc(-1px * var(--mmmax,0)))}}";
+    document.head.appendChild(st);
+  }
+  live && (document.body.style.timelineScope = "--mmsc");
   const layer = document.createElement("div");
   layer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30;display:none;opacity:1";
+  const track = document.createElement("div");
+  track.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%" + (live ? ";animation:mmTcScroll linear both;animation-timeline:--mmsc" : "");
+  layer.appendChild(track);
   document.body.appendChild(layer);
   const imgs = {};
-  let raf = 0;
+  let raf = 0, named = null;
   const tick = () => {
     raf = requestAnimationFrame(tick);
     const dark = !!document.querySelector(".theme-dark");
@@ -73730,11 +73743,19 @@ function MaoMat_trueColorCovers() {
     const holders = document.querySelectorAll("[data-mmcover]");
     if (!dark || blocked || !holders.length) {
       layer.style.display = "none";
+      document.querySelectorAll("[data-mmcover] img[data-mmhid]").forEach((x) => (x.style.visibility = "", x.removeAttribute("data-mmhid")));
       return;
     }
     const sc = holders[0].closest(".overflow-y-auto");
     if (!sc) return;
+    if (live && named !== sc) {
+      named && (named.style.scrollTimeline = "");
+      sc.style.scrollTimeline = "--mmsc block";
+      named = sc;
+    }
     const cr = sc.getBoundingClientRect();
+    const top = sc.scrollTop;
+    live && track.style.setProperty("--mmmax", String(Math.max(0, sc.scrollHeight - sc.clientHeight)));
     layer.style.display = "block";
     let left = cr.left;
     const side = document.querySelector("aside:hover > div, aside:focus-within > div");
@@ -73748,24 +73769,36 @@ function MaoMat_trueColorCovers() {
         im = imgs[id] = document.createElement("img");
         im.src = MaoMat_COVERS[id];
         im.alt = "";
-        im.style.cssText = "position:fixed;object-fit:cover;border-radius:12px;display:block";
-        layer.appendChild(im);
+        im.decoding = "sync";
+        im.style.cssText = "position:absolute;object-fit:cover;display:block";
+        track.appendChild(im);
       }
       const r = h.getBoundingClientRect();
       const inner = h.firstChild && h.firstChild.getBoundingClientRect ? h.firstChild.getBoundingClientRect() : r;
+      /* с анимацией — координаты внутри прокручиваемого содержимого (не зависят от прокрутки), без неё — экранные */
+      const y = live ? inner.top + top : inner.top;
       im.style.left = inner.left + "px";
-      im.style.top = inner.top + "px";
+      im.style.top = y + "px";
       im.style.width = inner.width + "px";
       im.style.height = inner.height + "px";
       im.style.borderRadius = (14 * (r.width / h.offsetWidth || 1)) + "px";
+      /* прозрачность карточки («скоро») переносится на копию */
+      let op = 1;
+      for (let x = h; x && x !== sc; x = x.parentElement) op *= +getComputedStyle(x).opacity || 0;
+      im.style.opacity = String(op);
+      /* обложка под фильтром прячется, когда копия уже загружена, — иначе полупрозрачные просвечивают друг через друга */
+      const base = h.querySelector("img");
+      base && im.complete && im.naturalWidth && !base.hasAttribute("data-mmhid") && (base.style.visibility = "hidden", base.setAttribute("data-mmhid", "1"));
     });
-    layer.style.opacity !== "1" && ((layer.style.transition = "opacity .18s ease"), (layer.style.opacity = "1"));
+    layer.style.opacity !== "1" && ((layer.style.transition = live ? "none" : "opacity .18s ease"), (layer.style.opacity = "1"));
   };
   tick();
   return () => {
     cancelAnimationFrame(raf);
     clearTimeout(idle);
     document.removeEventListener("scroll", onScroll, { capture: !0 });
+    named && (named.style.scrollTimeline = "");
+    document.querySelectorAll("img[data-mmhid]").forEach((x) => (x.style.visibility = "", x.removeAttribute("data-mmhid")));
     layer.remove();
   };
 }
@@ -75499,7 +75532,7 @@ function MaoMat_GResult({ r, title, onAgain, onErrors, onMenu }) {
 const MaoMat_GROWIC = {
   pairs: "M6 3.5h6A2.5 2.5 0 0 1 14.5 6v6A2.5 2.5 0 0 1 12 14.5H6A2.5 2.5 0 0 1 3.5 12V6A2.5 2.5 0 0 1 6 3.5zM16 13.5h6a2.5 2.5 0 0 1 2.5 2.5v6a2.5 2.5 0 0 1-2.5 2.5h-6a2.5 2.5 0 0 1-2.5-2.5v-6a2.5 2.5 0 0 1 2.5-2.5z",
   quiz: "M14 3a11 11 0 1 1 0 22 11 11 0 0 1 0-22zm0 3.2a1.5 1.5 0 0 0-1.5 1.5V14c0 .5.2.9.6 1.2l4 3a1.5 1.5 0 1 0 1.8-2.4l-3.4-2.5V7.7A1.5 1.5 0 0 0 14 6.2z",
-  order: "M3.20 16h3.19a2.2 2.2 0 0 1 2.2 2.2v4.19a2.2 2.2 0 0 1-2.2 2.2h-3.19a2.2 2.2 0 0 1-2.2-2.2v-4.19a2.2 2.2 0 0 1 2.2-2.2zM12.40 16h3.19a2.2 2.2 0 0 1 2.2 2.2v4.19a2.2 2.2 0 0 1-2.2 2.2h-3.19a2.2 2.2 0 0 1-2.2-2.2v-4.19a2.2 2.2 0 0 1 2.2-2.2zM21.59 16h3.19a2.2 2.2 0 0 1 2.2 2.2v4.19a2.2 2.2 0 0 1-2.2 2.2h-3.19a2.2 2.2 0 0 1-2.2-2.2v-4.19a2.2 2.2 0 0 1 2.2-2.2zM22.3 18.1h1.79a0.8 0.8 0 0 1 0.8 0.8v2.79a0.8 0.8 0 0 1-0.8 0.8h-1.79a0.8 0.8 0 0 1-0.8-0.8v-2.79a0.8 0.8 0 0 1 0.8-0.8zM21.59 3.4h3.19a2.2 2.2 0 0 1 2.2 2.2v4.19a2.2 2.2 0 0 1-2.2 2.2h-3.19a2.2 2.2 0 0 1-2.2-2.2v-4.19a2.2 2.2 0 0 1 2.2-2.2z",
+  order: "M4.6 5.4h4.2a2.8 2.8 0 1 1 5.6 0h4.2a2 2 0 0 1 2 2v4.2a2.8 2.8 0 1 1 0 5.6v4.2a2 2 0 0 1-2 2h-4.2a2.8 2.8 0 1 0-5.6 0H4.6a2 2 0 0 1-2-2v-4.2a2.8 2.8 0 1 0 0-5.6V7.4a2 2 0 0 1 2-2z",
 };
 function MaoMat_GRowIcon({ id }) {
   return MG("svg", { width: 42, height: 42, viewBox: "0 0 28 28", "aria-hidden": "true" }, MG("path", { d: MaoMat_GROWIC[id], fill: "currentColor", fillRule: "evenodd" }));
