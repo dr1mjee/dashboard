@@ -67585,9 +67585,22 @@ try {
    ставятся ровно поверх своих мест в сетке. Если поверх страницы открыто окно, меню
    или урок, слой прячется, и остаются обычные обложки. */
 function MaoMat_trueColorCovers() {
-  return () => {};
+  /* Точные цвета обложек в тёмной теме: копии обложек поверх, вне общего фильтра.
+     Пока страница прокручивается, копии спрятаны (видны обложки под фильтром) — так ничего не дрожит;
+     как только прокрутка остановилась, копии плавно появляются на месте. */
+  let moving = !1, idle = 0;
+  const onScroll = () => {
+    moving = !0;
+    layer.style.transition = "none";
+    layer.style.opacity = "0";
+    clearTimeout(idle);
+    idle = setTimeout(() => {
+      moving = !1;
+    }, 160);
+  };
+  document.addEventListener("scroll", onScroll, { capture: !0, passive: !0 });
   const layer = document.createElement("div");
-  layer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30;display:none";
+  layer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30;display:none;opacity:1";
   document.body.appendChild(layer);
   const imgs = {};
   let raf = 0;
@@ -67608,6 +67621,7 @@ function MaoMat_trueColorCovers() {
     const side = document.querySelector("aside:hover > div, aside:focus-within > div");
     side && (left = Math.max(left, side.getBoundingClientRect().right));
     layer.style.clipPath = "inset(" + cr.top + "px " + (window.innerWidth - cr.right) + "px " + (window.innerHeight - cr.bottom) + "px " + left + "px)";
+    if (moving) return;
     holders.forEach((h) => {
       const id = h.getAttribute("data-mmcover");
       let im = imgs[id];
@@ -67626,10 +67640,13 @@ function MaoMat_trueColorCovers() {
       im.style.height = inner.height + "px";
       im.style.borderRadius = (14 * (r.width / h.offsetWidth || 1)) + "px";
     });
+    layer.style.opacity !== "1" && ((layer.style.transition = "opacity .18s ease"), (layer.style.opacity = "1"));
   };
   tick();
   return () => {
     cancelAnimationFrame(raf);
+    clearTimeout(idle);
+    document.removeEventListener("scroll", onScroll, { capture: !0 });
     layer.remove();
   };
 }
