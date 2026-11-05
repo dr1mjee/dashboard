@@ -74268,6 +74268,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
                       c.jsx("div", { className: "text-[16px] font-semibold leading-tight truncate", children: L.num ? "Урок " + L.num : "Повторение" }),
                       c.jsx("div", { className: "text-[13px] text-black/50 leading-tight mt-0.5 truncate", children: L.titleRu || L.title }),
                     ] }),
+                    gamesOk && c.jsx("button", { type: "button", onClick: () => (MaoMat_stop(), setGames(!0)), "aria-label": "Игры", className: "mm-back shrink-0", children: c.jsx(MaoMat_GIcon, { id: "btn", size: 20 }) }),
                   ],
                 }),
                 c.jsx("div", { className: "mt-3 mm-lpills-m", children: pills }),
@@ -77538,6 +77539,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-g-slot{position:relative;min-width:3.8em;height:1.7em;margin:0 .22em}
 .mm-g-line.many .mm-g-slot{min-width:2.9em}
 .mm-g-line.many2 .mm-g-slot{min-width:2.6em;margin:0 .18em}
+@media (max-width:640px){.mm-g-line{font-size:22px;gap:10px 0}.mm-g-slot{min-width:2.7em;margin:0 .16em}.mm-g-line.many .mm-g-slot,.mm-g-line.many2 .mm-g-slot{min-width:2.3em}}
 .mm-g-end{position:absolute;left:100%;top:50%;transform:translateY(-50%);color:#000;line-height:1;font-weight:400;pointer-events:none}
 .mm-g-end.q{margin-left:.42em;font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:1.28em}
 .mm-g-end.dot{margin-left:.24em;margin-top:.24em;font-family:"ZhongYi KaiTi",KaiTi,"Kaiti SC",STKaiti,"PingFang SC","Noto Sans SC",sans-serif;font-size:1.38em}
