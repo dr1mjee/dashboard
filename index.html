@@ -73721,17 +73721,22 @@ function MaoMat_trueColorCovers() {
     }, 160);
   };
   document.addEventListener("scroll", onScroll, { capture: !0, passive: !0 });
-  if (!document.getElementById("mm-tc-style")) {
-    const st = document.createElement("style");
-    st.id = "mm-tc-style";
-    st.textContent = "@keyframes mmTcScroll{from{transform:translateY(0)}to{transform:translateY(calc(-1px * var(--mmmax,0)))}}";
-    document.head.appendChild(st);
-  }
+  /* ключевые кадры — с числом пикселей, без var(): только так анимация идёт на видеокарте вместе с прокруткой */
+  let st = document.getElementById("mm-tc-style");
+  st || ((st = document.createElement("style")), (st.id = "mm-tc-style"), document.head.appendChild(st));
+  let maxNow = -1, kf = 0;
+  const setMax = (m) => {
+    if (m === maxNow) return;
+    maxNow = m;
+    kf++;
+    st.textContent = "@keyframes mmTc" + kf + "{from{transform:translate3d(0,0,0)}to{transform:translate3d(0," + -m + "px,0)}}";
+    track.style.animationName = "mmTc" + kf;
+  };
   live && (document.body.style.timelineScope = "--mmsc");
   const layer = document.createElement("div");
   layer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30;display:none;opacity:1";
   const track = document.createElement("div");
-  track.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%" + (live ? ";animation:mmTcScroll linear both;animation-timeline:--mmsc" : "");
+  track.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;will-change:transform" + (live ? ";animation-duration:auto;animation-timing-function:linear;animation-fill-mode:both;animation-timeline:--mmsc" : "");
   layer.appendChild(track);
   document.body.appendChild(layer);
   const imgs = {};
@@ -73749,13 +73754,15 @@ function MaoMat_trueColorCovers() {
     const sc = holders[0].closest(".overflow-y-auto");
     if (!sc) return;
     if (live && named !== sc) {
-      named && (named.style.scrollTimeline = "");
+      named && ((named.style.scrollTimeline = ""), (named.style.overscrollBehaviorY = ""));
       sc.style.scrollTimeline = "--mmsc block";
+      /* без «резинки» на краях: при оттягивании страница уехала бы, а копии — нет */
+      sc.style.overscrollBehaviorY = "none";
       named = sc;
     }
     const cr = sc.getBoundingClientRect();
     const top = sc.scrollTop;
-    live && track.style.setProperty("--mmmax", String(Math.max(0, sc.scrollHeight - sc.clientHeight)));
+    live && setMax(Math.max(0, sc.scrollHeight - sc.clientHeight));
     layer.style.display = "block";
     let left = cr.left;
     const side = document.querySelector("aside:hover > div, aside:focus-within > div");
@@ -73797,7 +73804,7 @@ function MaoMat_trueColorCovers() {
     cancelAnimationFrame(raf);
     clearTimeout(idle);
     document.removeEventListener("scroll", onScroll, { capture: !0 });
-    named && (named.style.scrollTimeline = "");
+    named && ((named.style.scrollTimeline = ""), (named.style.overscrollBehaviorY = ""));
     document.querySelectorAll("img[data-mmhid]").forEach((x) => (x.style.visibility = "", x.removeAttribute("data-mmhid")));
     layer.remove();
   };
