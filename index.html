@@ -92965,10 +92965,10 @@ function MaoMat_Tasks({ L }) {
                 "aria-label": "Ответ " + (idx + 1),
                 onChange: onEdit,
                 onKeyDown: onKey,
-                className: Te("min-w-0 bg-transparent outline-none py-3 mm-answer mm-task-input", !showFin && "flex-1"),
-                style: showFin ? { fontSize: 22, color, width: fieldW + "em", maxWidth: "100%" } : { fontSize: 22, color },
+                className: Te("min-w-0 bg-transparent outline-none py-3 mm-answer mm-task-input", !(showFin && val) && "flex-1"),
+                style: showFin && val ? { fontSize: 22, color, width: fieldW + "em", maxWidth: "100%" } : { fontSize: 22, color },
               }, "in"),
-              showFin && c.jsx("span", { className: "mm-zh", "aria-hidden": "true", style: { fontSize: 22, color: color || "rgba(0,0,0,.45)", flex: "1 1 auto" }, children: finMark }, "fin")],
+              showFin && val && c.jsx("span", { className: "mm-p", "aria-hidden": "true", style: { fontSize: 22, color: color || "rgba(0,0,0,.45)", flex: "1 1 auto" }, children: finMark }, "fin")],
             }),
           hintA && !it.opts && (!inline || it.order) &&
             c.jsxs("div", {
