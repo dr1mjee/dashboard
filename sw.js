@@ -1,7 +1,7 @@
 /* Маомао Класс: кэш на устройстве.
    Страница — сначала из сети (всегда свежая версия), без сети — из кэша.
    Обложки, шрифт и аудио — из кэша, после первой загрузки открываются мгновенно. */
-const CACHE = "mm-class-v1";
+const CACHE = "mm-class-v2";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
   e.waitUntil(
