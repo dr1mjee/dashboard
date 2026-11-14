@@ -120384,7 +120384,7 @@ function MaoMat_HardWords({ student: a }) {
       c.jsxs("div", {
         className: "mm-hw-foot",
         children: [
-          c.jsxs("div", { className: "min-w-0", children: [doc && doc.name ? c.jsx("div", { className: "text-[13px] text-black/60 truncate", children: "Имя в Маомао: " + doc.name }) : null, doc && doc.active ? c.jsx("div", { className: "text-[13px] text-black/60 truncate", children: "Последнее занятие: " + MaoMat_hwWhen(new Date(doc.active + "T12:00:00").getTime()) }) : null, c.jsx("button", { type: "button", onClick: () => setShowMail(!showMail), className: "block max-w-full text-left text-[12px] text-black/40 truncate", children: "UID " + link.id + (showMail ? " · " + (doc && doc.email ? doc.email : "почта придёт, когда ученик откроет Маомао") : "") })] }),
+          c.jsxs("div", { className: "min-w-0", children: [doc && doc.name ? c.jsx("div", { className: "text-[13px] text-black/60 truncate", children: "Имя в Маомао: " + doc.name }) : null, doc && doc.active ? c.jsx("div", { className: "text-[13px] text-black/60 truncate", children: "Последнее занятие: " + MaoMat_hwWhen(new Date(doc.active + "T12:00:00").getTime()) }) : null, c.jsx("button", { type: "button", onClick: () => setShowMail(!showMail), className: "block max-w-full text-left text-[12px] text-black/40 truncate outline-none", style: { outline: "none" }, children: "UID " + link.id + (showMail ? " · " + (doc && doc.email ? doc.email : "почта придёт, когда ученик откроет Маомао") : "") })] }),
           c.jsx(ft, { small: !0, variant: "outline", onClick: () => setUnlink(!0), children: "Отвязать" }),
         ],
       }),
