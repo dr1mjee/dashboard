@@ -124191,6 +124191,8 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-hw-link input{flex:1;min-width:0}
 .mm-hw-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
 @media (max-width:767px){.mm-hw-row{grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:12px 14px}.mm-hw-zh{font-size:28px;min-width:64px}.mm-hw-zh.long{font-size:20px}.mm-hw-src,.mm-hw-when{display:none}.mm-hw-msub{display:block}.mm-hw-link{flex-direction:column;align-items:stretch}}
+/* Тёмная тема — инверсия: тени превращаются в свечение, поэтому теней нет (кроме тонкой рамки обложек) */
+.theme-dark :not(.mm-bookcover):not(.mm-bookhead-cover){box-shadow:none!important}
 .mm-pbook{display:flex;align-items:center;gap:14px;border-radius:20px;padding:12px 14px;margin-bottom:8px}
 .mm-pbook-cov{width:38px;flex:none}
 .mm-pbook-cov .mm-cover{width:100%;border-radius:6px;display:block}
