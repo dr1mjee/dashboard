@@ -120270,9 +120270,9 @@ function MaoMat_StudentBooks({ student: a, lessons }) {
   });
 }
 /* ---- Трудные слова ученика (видит только преподаватель).
-   Связка: преподаватель вписывает почту, под которой ученик входит в приложение
-   Маомао → appLinks/{почта} = {teacherId, studentId}. Приложение после тренировки
-   пишет hardWords/{почта}: до 30 слов с наибольшим числом ошибок. */
+   Связка: преподаватель вписывает UID ученика из приложения Маомао
+   (Firebase → Authentication) → appLinks/{uid} = {teacherId, studentId, uid}.
+   Приложение после тренировки пишет hardWords/{uid}: до 30 слов с наибольшим числом ошибок. */
 const MaoMat_HW_DAY = 864e5;
 function MaoMat_hwWhen(t) {
   if (!t) return "";
@@ -120339,22 +120339,22 @@ function MaoMat_HardWords({ student: a }) {
   const uid = St();
   const links = Mr(() => DV(xa(De, "appLinks"), TV("teacherId", "==", uid), TV("studentId", "==", a.id)), [a.id]);
   const hw = Mr(() => DV(xa(De, "hardWords"), TV("teacherId", "==", uid), TV("studentId", "==", a.id)), [a.id]);
-  const [email, setEmail] = H.useState("");
+  const [code, setCode] = H.useState("");
   const [busy, setBusy] = H.useState(!1);
   const [unlink, setUnlink] = H.useState(!1);
   const link = links.data[0];
   if (links.loading) return c.jsx("div", { className: "pt-4" });
   const save = async (e) => {
     e && e.preventDefault();
-    const em = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return tt("Проверьте почту");
+    const em = code.trim();
+    if (!/^[A-Za-z0-9]{20,128}$/.test(em)) return tt("Проверьте UID");
     setBusy(!0);
     try {
-      await IA(Me(De, "appLinks", em), { teacherId: uid, studentId: a.id, email: em, createdAt: sr() });
-      setEmail("");
-      tt("Почта привязана");
+      await IA(Me(De, "appLinks", em), { teacherId: uid, studentId: a.id, uid: em, createdAt: sr() });
+      setCode("");
+      tt("Ученик привязан");
     } catch {
-      tt("Эта почта уже привязана к другому ученику");
+      tt("Этот UID уже привязан к другому ученику");
     }
     setBusy(!1);
   };
@@ -120364,12 +120364,12 @@ function MaoMat_HardWords({ student: a }) {
       children: c.jsxs("form", {
         onSubmit: save,
         children: [
-          c.jsx(ls, { children: "Почта в Маомао" }),
+          c.jsx(ls, { children: "UID в Маомао" }),
           c.jsxs("div", {
             className: "mm-hw-link",
             children: [
-              c.jsx(It, { type: "email", value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Почта, под которой ученик входит в приложение", autoComplete: "off" }),
-              c.jsx(ft, { type: "submit", small: !0, disabled: busy || !email.trim(), children: "Привязать" }),
+              c.jsx(It, { value: code, onChange: (e) => setCode(e.target.value), placeholder: "UID ученика из Firebase → Authentication", autoComplete: "off", spellCheck: !1 }),
+              c.jsx(ft, { type: "submit", small: !0, disabled: busy || !code.trim(), children: "Привязать" }),
             ],
           }),
         ],
@@ -120389,7 +120389,7 @@ function MaoMat_HardWords({ student: a }) {
       }),
       unlink &&
         c.jsx(vs, {
-          title: "Отвязать почту?",
+          title: "Отвязать ученика?",
           message: "Трудные слова этого ученика перестанут приходить.",
           confirmLabel: "Отвязать",
           destructive: !0,
@@ -120401,7 +120401,7 @@ function MaoMat_HardWords({ student: a }) {
               b.delete(Me(De, "appLinks", link.id));
               doc && b.delete(Me(De, "hardWords", link.id));
               await b.commit();
-              tt("Почта отвязана");
+              tt("Ученик отвязан");
             } catch {
               tt("Не получилось сохранить");
             }
