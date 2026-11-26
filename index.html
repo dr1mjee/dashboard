@@ -131226,7 +131226,8 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-bookhead-title,.mm-book-title{font-family:Inter,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",sans-serif}
 /* верно / неверно: две круглые кнопки справа от утверждения */
 .mm-item:has(.mm-opt-tf){display:flex;flex-wrap:wrap;align-items:center;column-gap:12px}
-.mm-item:has(.mm-opt-tf)>.mm-irow{flex:1 1 200px;align-items:center}
+.mm-item:has(.mm-opt-tf)>.mm-irow{flex:1 1 0;min-width:0;align-items:center}
+@media (max-width:640px){.mm-opt-tf{width:42px;min-height:42px!important}.mm-item:has(.mm-opt-tf)>.ml-9{gap:8px}}
 .mm-item:has(.mm-opt-tf)>.ml-9{margin-top:0!important;flex-wrap:nowrap}
 .mm-item:has(.mm-opt-tf)>div:nth-child(n+3){flex-basis:100%}
 .mm-opt-tf{width:48px;padding:0!important}
