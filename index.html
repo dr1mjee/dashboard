@@ -129439,6 +129439,41 @@ function MaoMat_MMShow({ L, onClose }) {
     const all = el.querySelectorAll(".mm-bub");
     if (all.length) all[all.length - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [shown, i]);
+  /* слайд с заданием или грамматикой подгоняется по высоте экрана: масштаб от 0.75 до data-fit */
+  const [fitTick, setFitTick] = H.useState(0);
+  H.useEffect(() => {
+    const r = () => setFitTick((x) => x + 1);
+    window.addEventListener("resize", r);
+    return () => window.removeEventListener("resize", r);
+  }, []);
+  H.useLayoutEffect(() => {
+    const box = stage.current;
+    const el = box && box.querySelector("[data-fit]");
+    if (!el) return;
+    const max = +el.dataset.fit || 1;
+    const cs = getComputedStyle(box);
+    const fit = () => {
+      const aw = Math.min(1680, box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+      const ah = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 8;
+      let z = max;
+      for (let n = 0; n < 3; n++) {
+        el.style.zoom = z;
+        el.style.width = aw / z + "px";
+        const h = el.getBoundingClientRect().height;
+        if (h <= ah + 1) break;
+        z = Math.max(0.75, Math.min(max, (z * ah) / h));
+      }
+    };
+    fit();
+    let busy = !1;
+    const ro = new ResizeObserver(() => {
+      if (busy) return;
+      busy = !0;
+      requestAnimationFrame(() => (fit(), (busy = !1)));
+    });
+    ro.observe(el.firstElementChild || el);
+    return () => ro.disconnect();
+  }, [i, fitTick]);
   const tap = (k, text) => R.next(k) === 1 && MaoMat_speak(text, k);
   const say = (line) => MaoMat_toks2str(line.toks);
   const secs = MaoMat_MM_SECS.filter(([id]) => S.some((x) => x.sec === id));
@@ -129477,6 +129512,7 @@ function MaoMat_MMShow({ L, onClose }) {
   else if (s.t === "gram")
     body = c.jsxs("div", {
       className: "mm-sh-gram",
+      "data-fit": 1,
       children: [
         c.jsxs("div", { className: "mm-sh-gtop", children: [
         c.jsxs("div", { className: "mm-plq", children: [c.jsx("span", { className: "mm-num", children: s.gi + 1 }), c.jsx("div", { children: c.jsx(MaoMat_Xn, { text: s.g.title }) })] }),
@@ -129521,6 +129557,7 @@ function MaoMat_MMShow({ L, onClose }) {
   else if (s.t === "recap")
     body = c.jsx("div", {
       className: "mm-sh-recap",
+      "data-fit": 1,
       children: s.gs.map((g) => {
         const ex = g.blocks[0].ex[0];
         const k = "g:" + (ex[3] || ex[0]);
@@ -129576,7 +129613,7 @@ function MaoMat_MMShow({ L, onClose }) {
           }) }),
         ],
       });
-  } else if (s.t === "task") body = c.jsx("div", { className: "mm-sh-task", children: c.jsx(MaoMat_Tasks, { L: { ...L, tasks: [s.tk], tn: s.ki } }, s.tk.id) });
+  } else if (s.t === "task") body = c.jsx("div", { className: "mm-sh-task", "data-fit": 1.5, children: c.jsx(MaoMat_Tasks, { L: { ...L, tasks: [s.tk], tn: s.ki } }, s.tk.id) });
   else
     body = c.jsxs("div", {
       className: "mm-sh-cover",
@@ -129601,7 +129638,7 @@ function MaoMat_MMShow({ L, onClose }) {
             }),
           ],
         }),
-        c.jsx("div", { ref: stage, className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t, s.t === "text" && s.tx.type !== "chat" && "mm-shs-lyr"), children: body }, i) }),
+        c.jsx("div", { ref: stage, className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t, s.t === "text" && (s.tx.type === "chat" ? "mm-shs-lyr mm-shs-chat" : "mm-shs-lyr")), children: body }, i) }),
         c.jsxs("div", {
           className: "mm-sh-nav",
           children: [
@@ -131571,12 +131608,16 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-sh-text .mm-bub-ru{font-size:clamp(18px,1.5vw,24px)}.mm-sh-text .mm-bub{padding:14px 22px 16px}
 .mm-sh-text .mm-chat-ava{width:54px;height:54px;font-size:31px}.mm-sh-text .mm-chat-name{font-size:22px}.mm-sh-text .mm-chat-st{font-size:14px}
 .mm-sh-text .mm-typing{padding:18px 22px}.mm-sh-text .mm-typing i{width:10px;height:10px}
-/* задания: на всю ширину и крупно */
-.mm-sh-task{width:calc(min(1680px, 92vw) / 1.5);margin:0 auto;zoom:1.5}
+/* задания: масштаб подбирает показ (data-fit), по ширине — весь экран */
+.mm-sh-task{margin:0 auto}
 .mm-sh-task>div>.mt-6{display:none}
 .mm-sh-task .mm-opts-col{display:grid;grid-template-columns:1fr 1fr 1fr;grid-auto-flow:row;max-width:none}
-@media (max-width:1200px){.mm-sh-task{width:calc(92vw / 1.25);zoom:1.25}.mm-sh-task .mm-opts-col{grid-template-columns:1fr 1fr}}
-@media (max-width:900px){.mm-sh-gram{grid-template-columns:1fr}.mm-sh-stage{padding:8px 16px 16px}.mm-sh-ltitle{display:none}.mm-sh-task{width:auto;zoom:1}.mm-sh-task .mm-opts-col{grid-template-columns:1fr}.mm-sh-who{width:56px}.mm-sh-bar{padding:12px 16px}}
+/* переписка в показе: на всю высоту, лента прокручивается внутри и мягко гаснет сверху */
+.mm-shs-chat .mm-sh-text .mm-chat{flex:1;min-height:0;display:flex;flex-direction:column}
+.mm-shs-chat .mm-chat-list{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;justify-content:flex-end;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18%);mask-image:linear-gradient(to bottom,transparent 0,#000 18%)}
+.mm-shs-chat .mm-chat-list>:first-child{margin-top:auto}
+.mm-shs-chat .mm-chat-list::-webkit-scrollbar{display:none}
+@media (max-width:900px){.mm-sh-stage{padding:8px 16px 16px}.mm-sh-ltitle{display:none}.mm-sh-task .mm-opts-col{grid-template-columns:1fr}.mm-sh-who{width:56px}.mm-sh-bar{padding:12px 16px}}
 /* книги серии в работе: не открываются */
 .mm-bookrow-locked{cursor:default}
 .mm-bookrow-locked .mm-book-go{visibility:hidden}
