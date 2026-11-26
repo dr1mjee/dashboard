@@ -129512,7 +129512,7 @@ function MaoMat_MMShow({ L, onClose }) {
   else if (s.t === "gram")
     body = c.jsxs("div", {
       className: "mm-sh-gram",
-      "data-fit": 1,
+      "data-fit": 1.45,
       children: [
         c.jsxs("div", { className: "mm-sh-gtop", children: [
         c.jsxs("div", { className: "mm-plq", children: [c.jsx("span", { className: "mm-num", children: s.gi + 1 }), c.jsx("div", { children: c.jsx(MaoMat_Xn, { text: s.g.title }) })] }),
@@ -129557,7 +129557,7 @@ function MaoMat_MMShow({ L, onClose }) {
   else if (s.t === "recap")
     body = c.jsx("div", {
       className: "mm-sh-recap",
-      "data-fit": 1,
+      "data-fit": 1.3,
       children: s.gs.map((g) => {
         const ex = g.blocks[0].ex[0];
         const k = "g:" + (ex[3] || ex[0]);
@@ -131574,7 +131574,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-sh-exzh{font-size:clamp(30px,2.6vw,46px);line-height:1.35}
 .mm-sh-expy{font-size:clamp(17px,1.3vw,21px);color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:clamp(17px,1.3vw,21px);color:rgba(0,0,0,.7);margin-top:2px}
 /* грамматика раздела (повторение) */
-.mm-sh-recap{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px}
+.mm-sh-recap{margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px}
 .mm-sh-rrow{display:flex;align-items:center;gap:24px;background:#F5F5F5;border-radius:22px;padding:14px 22px;cursor:pointer}
 .mm-sh-rrow.on{box-shadow:inset 0 0 0 2px #000}
 .mm-sh-rrow .mm-sh-chip{flex-shrink:0;width:180px;justify-content:center}
