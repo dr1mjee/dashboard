@@ -129427,6 +129427,14 @@ function MaoMat_MMShow({ L, onClose }) {
     window.addEventListener("keydown", k, !0);
     return () => window.removeEventListener("keydown", k, !0);
   }, []);
+  const stage = H.useRef(null);
+  /* новая реплика всегда в кадре */
+  H.useEffect(() => {
+    const el = stage.current;
+    if (!el || shown < 2) return;
+    const all = el.querySelectorAll(".mm-sh-line, .mm-bub");
+    all.length && all[all.length - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [shown]);
   const tap = (k, text) => R.next(k) === 1 && MaoMat_speak(text, k);
   const say = (line) => MaoMat_toks2str(line.toks);
   const secs = MaoMat_MM_SECS.filter(([id]) => S.some((x) => x.sec === id));
@@ -129564,7 +129572,7 @@ function MaoMat_MMShow({ L, onClose }) {
             }),
           ],
         }),
-        c.jsx("div", { className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t), children: body }, i) }),
+        c.jsx("div", { ref: stage, className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t), children: body }, i) }),
         c.jsxs("div", {
           className: "mm-sh-nav",
           children: [
@@ -131485,8 +131493,8 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-sh-word{background:#F5F5F5;border-radius:28px;min-height:clamp(150px,19vh,210px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;cursor:pointer;transition:box-shadow .15s}
 .mm-sh-word.on{box-shadow:inset 0 0 0 2px #000}
 .mm-sh-wh{font-size:clamp(44px,4.6vw,68px);line-height:1.15}
-.mm-sh-wpy{font-size:20px;color:rgba(0,0,0,.5);min-height:26px}
-.mm-sh-wru{font-size:16px;color:rgba(0,0,0,.7);min-height:22px;text-align:center;line-height:1.3}
+.mm-sh-wpy{font-size:22px;color:rgba(0,0,0,.5);min-height:28px}
+.mm-sh-wru{font-size:18px;color:rgba(0,0,0,.7);min-height:22px;text-align:center;line-height:1.3}
 /* грамматика */
 .mm-sh-gram{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .mm-sh-gram .mm-plq{font-size:26px;padding:18px 26px;border-radius:24px;margin:0}
@@ -131515,7 +131523,13 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-shc-head .mm-sh-say,.mm-shc-sign .mm-sh-say{flex:0 1 auto}.mm-shc-sign{justify-content:flex-end}
 .mm-sh-more{margin:10px 0 0 120px;cursor:pointer}
 .mm-sh-text .mm-chat{padding:10px 18px 18px}
-.mm-sh-text .mm-bub .mm-zh{font-size:clamp(26px,2.4vw,34px)!important}
+.mm-sh-text .mm-bub .mm-zh:not(.mm-bub-who){font-size:clamp(26px,2.4vw,34px)!important}
+.mm-sh-text .mm-bub-who{font-size:15px}
+.mm-sh-text .mm-chat-ava{width:50px;height:50px;font-size:29px}.mm-sh-text .mm-chat-name{font-size:21px}.mm-sh-text .mm-chat-st{font-size:14px}
+.mm-sh-text .mm-typing{padding:18px 20px}.mm-sh-text .mm-typing i{width:9px;height:9px}
+.mm-sh-chip.mm-chip-z{background:#333333;border-color:#333333;color:#fff}
+.theme-dark .mm-sh-chip.mm-chip-z{background:#D9D9D9;border-color:#D9D9D9;color:#000}
+.mm-sh-task>div>.mt-6{display:none}
 .mm-sh-text .mm-bub-ru{font-size:18px}.mm-sh-text .mm-bub{padding:12px 18px 14px}
 /* задания: крупнее, по одному */
 .mm-sh-task{max-width:1000px;margin:0 auto;zoom:1.3}
