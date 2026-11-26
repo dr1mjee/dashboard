@@ -129388,20 +129388,18 @@ function MaoMat_Colloc({ L, R }) {
 const MaoMat_EMO = { "金敏": "🐯", "王小雨": "🐼", "安娜": "🪆" };
 function MaoMat_mmSlides(L) {
   const S = [{ t: "cover", sec: null }];
-  for (let i = 0; i < L.words.length; i += 8) S.push({ t: "words", sec: "words", ws: L.words.slice(i, i + 8) });
-  L.names.length && S.push({ t: "words", sec: "words", ws: L.names, names: 1 });
   if (!L.num && L.grammar.length) for (let j = 0; j < L.grammar.length; j += 8) S.push({ t: "recap", sec: "grammar", gs: L.grammar.slice(j, j + 8) });
   else L.grammar.forEach((g, gi) => S.push({ t: "gram", sec: "grammar", g, gi }));
   L.texts.forEach((tx, ti) => {
     const lines = tx.lines.map((l, li) => ({ id: ti + "_" + li, toks: MaoMat_tokens(l[1], L.dict, l[2]), py: l[2], ru: l[3], name: l[0], cls: l[4] }));
-    const steps = tx.type === "dialog" || tx.type === "chat" || !tx.type ? lines.length : 0;
+    const steps = lines.length;
     S.push({ t: "text", sec: "texts", tx: { ...tx, lines }, ti, steps });
   });
   L.tasks.forEach((tk, ki) => S.push({ t: "task", sec: "tasks", tk, ki }));
   S.push({ t: "end", sec: null });
   return S;
 }
-const MaoMat_MM_SECS = [["words", "Слова"], ["grammar", "Грамматика"], ["texts", "Тексты"], ["tasks", "Задания"]];
+const MaoMat_MM_SECS = [["grammar", "Грамматика"], ["texts", "Тексты"], ["tasks", "Задания"]];
 function MaoMat_MMShow({ L, onClose }) {
   const S = H.useMemo(() => MaoMat_mmSlides(L), [L]);
   const R = MaoMat_useStages(L);
@@ -129432,10 +129430,12 @@ function MaoMat_MMShow({ L, onClose }) {
   /* новая реплика всегда в кадре */
   H.useEffect(() => {
     const el = stage.current;
-    if (!el || shown < 2) return;
-    const all = el.querySelectorAll(".mm-sh-line, .mm-bub");
+    if (!el) return;
+    const cur = el.querySelector(".mm-sh-line.now");
+    if (cur) return cur.scrollIntoView({ block: "center", behavior: shown < 2 ? "auto" : "smooth" });
+    const all = el.querySelectorAll(".mm-bub");
     all.length && all[all.length - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [shown]);
+  }, [shown, i]);
   const tap = (k, text) => R.next(k) === 1 && MaoMat_speak(text, k);
   const say = (line) => MaoMat_toks2str(line.toks);
   const secs = MaoMat_MM_SECS.filter(([id]) => S.some((x) => x.sec === id));
@@ -129475,9 +129475,11 @@ function MaoMat_MMShow({ L, onClose }) {
     body = c.jsxs("div", {
       className: "mm-sh-gram",
       children: [
+        c.jsxs("div", { className: "mm-sh-gleft", children: [
         c.jsxs("div", { className: "mm-plq", children: [c.jsx("span", { className: "mm-num", children: s.gi + 1 }), c.jsx("div", { children: c.jsx(MaoMat_Xn, { text: s.g.title }) })] }),
         s.g.text && c.jsx("div", { className: "mm-sh-gtext", children: c.jsx(MaoMat_Xn, { text: s.g.text }) }),
-        ...s.g.blocks.map((b, bi) =>
+        ] }),
+        c.jsx("div", { className: "mm-sh-gright", children: s.g.blocks.map((b, bi) =>
           c.jsxs(
             "div",
             {
@@ -129510,7 +129512,7 @@ function MaoMat_MMShow({ L, onClose }) {
             },
             bi,
           ),
-        ),
+        ) }),
       ],
     });
   else if (s.t === "recap")
@@ -129548,8 +129550,10 @@ function MaoMat_MMShow({ L, onClose }) {
           head,
           c.jsx("div", {
             className: Te("mm-sh-lines", "mm-shl-" + (tx.type || "dialog")),
-            children: tx.lines.slice(0, s.steps ? shown : tx.lines.length).map((l) => {
+            children: tx.lines.slice(0, shown).map((l, li) => {
               const k = "l:" + l.id;
+              const now = li === shown - 1;
+              const long = say(l).length > 34;
               const go1 = () => tap(k, say(l));
               return c.jsxs(
                 "div",
@@ -129557,7 +129561,7 @@ function MaoMat_MMShow({ L, onClose }) {
                   role: "button",
                   tabIndex: 0,
                   onClick: go1,
-                  className: Te("mm-sh-line", l.cls && "mm-shc-" + l.cls, R.get(k) && "on"),
+                  className: Te("mm-sh-line", now ? "now" : "past", long && "long", l.cls && "mm-shc-" + l.cls, R.get(k) && "on"),
                   children: [
                     l.name && c.jsx("div", { className: "mm-zh mm-sh-who", children: l.name }),
                     c.jsxs("div", { className: "mm-sh-say", children: [c.jsx(MaoMat_TokenLine, { toks: l.toks, pinyin: R.py(k), onWord: go1 }), R.ru(k) && c.jsx("div", { className: "mm-sh-ru", children: l.ru })] }),
@@ -129567,7 +129571,6 @@ function MaoMat_MMShow({ L, onClose }) {
               );
             }),
           }),
-          s.steps > 0 && shown < s.steps && c.jsxs("div", { className: "mm-typing mm-sh-more", children: [c.jsx("i", {}), c.jsx("i", {}), c.jsx("i", {})] }),
         ],
       });
   } else if (s.t === "task") body = c.jsx("div", { className: "mm-sh-task", children: c.jsx(MaoMat_Tasks, { L: { ...L, tasks: [s.tk], tn: s.ki } }, s.tk.id) });
@@ -131489,80 +131492,83 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-opts-col .mm-opt{counter-increment:mmo;justify-content:flex-start;min-height:46px;padding:0 20px 0 14px}
 .mm-opts-col .mm-opt::before{content:counter(mmo,upper-latin);font:600 13px/1 Inter,sans-serif;color:rgba(0,0,0,.4);width:16px;margin-right:12px;text-align:left}
 .mm-opts-col .mm-opt-ok::before{color:#2F9E5B}.mm-opts-col .mm-opt-bad::before{color:#fff}
-/* ===== показ урока ===== */
+/* ===== показ урока: всё в ширину экрана, крупно ===== */
 .mm-show{user-select:none}
 .mm-sh-prog{height:3px;background:#F0F0F0;flex-shrink:0}.mm-sh-prog>div{height:100%;background:#2F9E5B;transition:width .3s ease}
-.mm-sh-bar{display:flex;align-items:center;gap:16px;padding:14px 24px;flex-shrink:0}
+.mm-sh-bar{display:flex;align-items:center;gap:16px;padding:14px 28px;flex-shrink:0}
 .mm-sh-ltitle{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
 .mm-sh-pills{display:flex;gap:4px;background:#F2F2F2;border-radius:999px;padding:4px;flex-shrink:0}
 .mm-sh-pills .mm-lpill{height:34px;padding:0 16px;font-size:13.5px}
-.mm-sh-stage{flex:1;min-height:0;overflow-y:auto;display:flex;padding:8px 40px 24px}
-.mm-sh-slide{margin:auto;width:100%;max-width:1180px;animation:mmSlideIn .25s ease-out}
+.mm-sh-stage{flex:1;min-height:0;overflow-y:auto;display:flex;padding:8px 4vw 16px;scrollbar-width:none}
+.mm-sh-stage::-webkit-scrollbar{display:none}
+.mm-sh-slide{margin:auto;width:100%;max-width:1680px;animation:mmSlideIn .25s ease-out}
 @keyframes mmSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.mm-sh-nav{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 24px 20px;flex-shrink:0}
+.mm-sh-nav{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 28px 20px;flex-shrink:0}
 .mm-sh-count{font-size:13px;color:rgba(0,0,0,.4);margin-right:6px;font-variant-numeric:tabular-nums}
 .mm-sh-btn{width:52px;height:52px;border-radius:50%;border:1px solid #E5E5E5;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mm-sh-btn:disabled{opacity:.3;cursor:default}.mm-sh-btn-go{background:#000;border-color:#000;color:#fff}
 /* обложка и конец */
-.mm-sh-cover{text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
-.mm-sh-kick{font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#2F9E5B}
-.mm-sh-title{font-size:clamp(56px,7vw,104px);line-height:1.15}
-.mm-sh-title-ru{font-size:clamp(32px,3.4vw,48px);font-weight:600}
-.mm-sh-sub{font-size:clamp(20px,2vw,28px);color:rgba(0,0,0,.5)}
-.mm-sh-done{width:104px;height:104px;border-radius:50%;background:#2F9E5B;display:flex;align-items:center;justify-content:center}
-.mm-sh-done svg{width:52px;height:52px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-/* слова */
-.mm-sh-words{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.mm-sh-word{background:#F5F5F5;border-radius:28px;min-height:clamp(150px,19vh,210px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;cursor:pointer;transition:box-shadow .15s}
-.mm-sh-word.on{box-shadow:inset 0 0 0 2px #000}
-.mm-sh-wh{font-size:clamp(44px,4.6vw,68px);line-height:1.15}
-.mm-sh-wpy{font-size:22px;color:rgba(0,0,0,.5);min-height:28px}
-.mm-sh-wru{font-size:18px;color:rgba(0,0,0,.7);min-height:22px;text-align:center;line-height:1.3}
-/* грамматика */
-.mm-sh-gram{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-.mm-sh-gram .mm-plq{font-size:26px;padding:18px 26px;border-radius:24px;margin:0}
-.mm-sh-gram .mm-plq .mm-num{width:34px;height:34px;font-size:16px}
-.mm-sh-gtext{font-size:21px;line-height:1.5;color:rgba(0,0,0,.75)}
-.mm-sh-gblock{background:#F5F5F5;border-radius:24px;padding:20px 24px;display:flex;flex-direction:column;gap:4px}
-.mm-sh-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
-.mm-sh-chip{height:44px;padding:0 18px;display:inline-flex;align-items:center;border-radius:14px;background:#fff;border:1px solid rgba(0,0,0,.1);font-size:17px;font-weight:500}
-.mm-sh-plus{color:rgba(0,0,0,.3);font-size:18px}
-.mm-sh-ex{padding:10px 12px;border-radius:16px;cursor:pointer}
-.mm-sh-ex:hover{background:#EDEDED}.mm-sh-ex.on{background:#fff}
-.mm-sh-exzh{font-size:clamp(28px,2.6vw,38px);line-height:1.35}
-.mm-sh-expy{font-size:18px;color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:18px;color:rgba(0,0,0,.7);margin-top:2px}
-/* тексты */
-.mm-sh-text{max-width:1000px;margin:0 auto;min-height:60vh;cursor:default}
-.mm-sh-thead{text-align:center;font-size:20px;color:rgba(0,0,0,.45);margin-bottom:20px}
-.mm-sh-thead .mm-txk{font-size:14px}
-.mm-sh-lines{display:flex;flex-direction:column;gap:6px}
-.mm-sh-line{display:flex;gap:20px;align-items:baseline;padding:12px 16px;border-radius:18px;cursor:pointer;animation:mmBubIn .22s ease-out}
-.mm-sh-line:hover{background:#F5F5F5}.mm-sh-line.on{background:#F5F5F5}
-.mm-sh-who{width:84px;flex-shrink:0;font-size:18px;color:rgba(0,0,0,.4);text-align:right}
-.mm-sh-say{flex:1;min-width:0}
-.mm-sh-say .mm-zh{font-size:clamp(28px,2.7vw,40px)!important}
-.mm-sh-say button>span:not(.mm-zh){font-size:15px!important}
-.mm-sh-ru{font-size:19px;color:rgba(0,0,0,.7);margin-top:6px}
-.mm-shc-head .mm-sh-say,.mm-shc-sign .mm-sh-say{flex:0 1 auto}.mm-shc-sign{justify-content:flex-end}
-.mm-sh-more{margin:10px 0 0 120px;cursor:pointer}
-.mm-sh-text .mm-chat{padding:10px 18px 18px}
-.mm-sh-text .mm-bub .mm-zh:not(.mm-bub-who){font-size:clamp(26px,2.4vw,34px)!important}
-.mm-sh-text .mm-bub-who{font-size:15px}
-.mm-sh-text .mm-chat-ava{width:50px;height:50px;font-size:29px}.mm-sh-text .mm-chat-name{font-size:21px}.mm-sh-text .mm-chat-st{font-size:14px}
-.mm-sh-text .mm-typing{padding:18px 20px}.mm-sh-text .mm-typing i{width:9px;height:9px}
+.mm-sh-cover{text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+.mm-sh-kick{font-size:16px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#2F9E5B}
+.mm-sh-title{font-size:clamp(64px,8vw,130px);line-height:1.15}
+.mm-sh-title-ru{font-size:clamp(34px,3.4vw,52px);font-weight:600}
+.mm-sh-sub{font-size:clamp(22px,2.2vw,34px);color:rgba(0,0,0,.5)}
+.mm-sh-done{width:110px;height:110px;border-radius:50%;background:#2F9E5B;display:flex;align-items:center;justify-content:center}
+.mm-sh-done svg{width:54px;height:54px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* грамматика: слева правило, справа схема и примеры */
+.mm-sh-gram{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,3vw,56px);align-items:center}
+.mm-sh-gleft{display:flex;flex-direction:column;gap:22px}
+.mm-sh-gright{display:flex;flex-direction:column;gap:16px}
+.mm-sh-gram .mm-plq{font-size:clamp(26px,2.2vw,36px);line-height:1.25;padding:22px 28px;border-radius:28px;margin:0;gap:16px}
+.mm-sh-gram .mm-plq .mm-num{width:40px;height:40px;font-size:18px;flex-shrink:0}
+.mm-sh-gtext{font-size:clamp(20px,1.6vw,26px);line-height:1.5;color:rgba(0,0,0,.72)}
+.mm-sh-gblock{background:#F5F5F5;border-radius:28px;padding:24px 28px;display:flex;flex-direction:column;gap:4px}
+.mm-sh-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px}
+.mm-sh-chip{height:52px;padding:0 22px;display:inline-flex;align-items:center;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.1);font-size:20px;font-weight:500}
 .mm-sh-chip.mm-chip-z{background:#333333;border-color:#333333;color:#fff}
 .theme-dark .mm-sh-chip.mm-chip-z{background:#D9D9D9;border-color:#D9D9D9;color:#000}
-.mm-sh-task>div>.mm-sh-task>div>.mt-6,.mm-sh-task>div>.mt-6{display:none}
-.mm-sh-recap{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:10px}
-.mm-sh-rrow{display:flex;align-items:center;gap:18px;background:#F5F5F5;border-radius:20px;padding:12px 18px;cursor:pointer}
+.mm-sh-plus{color:rgba(0,0,0,.3);font-size:22px}
+.mm-sh-ex{padding:10px 14px;border-radius:18px;cursor:pointer}
+.mm-sh-ex:hover{background:#EDEDED}.mm-sh-ex.on{background:#fff}
+.mm-sh-exzh{font-size:clamp(32px,3vw,50px);line-height:1.35}
+.mm-sh-expy{font-size:clamp(18px,1.4vw,22px);color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:clamp(18px,1.4vw,22px);color:rgba(0,0,0,.7);margin-top:2px}
+/* грамматика раздела (повторение) */
+.mm-sh-recap{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px}
+.mm-sh-rrow{display:flex;align-items:center;gap:24px;background:#F5F5F5;border-radius:22px;padding:14px 22px;cursor:pointer}
 .mm-sh-rrow.on{box-shadow:inset 0 0 0 2px #000}
-.mm-sh-rrow .mm-sh-chip{flex-shrink:0;width:150px;justify-content:center}
-.mm-sh-rrow .mm-sh-exzh{font-size:clamp(24px,2vw,30px)}
-@media (max-width:900px){.mm-sh-recap{grid-template-columns:1fr}}
-.mm-sh-text .mm-bub-ru{font-size:18px}.mm-sh-text .mm-bub{padding:12px 18px 14px}
-/* задания: крупнее, по одному */
-.mm-sh-task{max-width:1000px;margin:0 auto;zoom:1.3}
-@media (max-width:900px){.mm-sh-words{grid-template-columns:repeat(2,minmax(0,1fr))}.mm-sh-stage{padding:8px 16px 16px}.mm-sh-ltitle{display:none}.mm-sh-task{zoom:1}.mm-sh-who{width:56px}.mm-sh-bar{padding:12px 16px}}
+.mm-sh-rrow .mm-sh-chip{flex-shrink:0;width:180px;justify-content:center}
+.mm-sh-rrow .mm-sh-exzh{font-size:clamp(26px,2.3vw,38px)}
+/* текст как в плеере: текущая строка крупно в центре, пройденные бледнее и уходят вверх */
+.mm-sh-text{width:100%;cursor:pointer}
+.mm-sh-thead{text-align:center;font-size:20px;color:rgba(0,0,0,.45);position:sticky;top:0;background:linear-gradient(#fff 70%,rgba(255,255,255,0));padding:6px 0 26px;z-index:1}
+.mm-sh-thead .mm-txk{font-size:14px}
+.mm-sh-lines{display:flex;flex-direction:column;gap:clamp(10px,1.6vh,22px);padding:26vh 0 38vh}
+.mm-sh-line{display:flex;gap:clamp(20px,2vw,40px);align-items:baseline;padding:10px 20px;border-radius:22px;transition:opacity .35s ease,transform .35s ease;transform-origin:left center}
+.mm-sh-line.past{opacity:.28;transform:scale(.94)}
+.mm-sh-line.past:hover{opacity:.55}
+.mm-sh-line.now{opacity:1}
+.mm-sh-line.now.on,.mm-sh-line.past.on{background:#F5F5F5}
+.mm-sh-who{width:clamp(80px,7vw,130px);flex-shrink:0;font-size:clamp(18px,1.5vw,24px);color:rgba(0,0,0,.45);text-align:right}
+.mm-sh-say{flex:1;min-width:0}
+.mm-sh-say .mm-zh{font-size:clamp(36px,3.6vw,64px)!important;line-height:1.3}
+.mm-sh-line.long .mm-sh-say .mm-zh{font-size:clamp(30px,2.7vw,46px)!important}
+.mm-sh-say button>span:not(.mm-zh){font-size:clamp(14px,1.1vw,18px)!important}
+.mm-sh-ru{font-size:clamp(20px,1.7vw,28px);color:rgba(0,0,0,.65);margin-top:8px}
+.mm-shc-sign{justify-content:flex-end}
+/* переписка в показе */
+.mm-sh-text .mm-chat{padding:12px 22px 22px;cursor:pointer}
+.mm-sh-text .mm-chat .mm-bub{max-width:min(70%,1000px)}
+.mm-sh-text .mm-bub .mm-zh:not(.mm-bub-who){font-size:clamp(30px,2.8vw,48px)!important}
+.mm-sh-text .mm-bub-who{font-size:16px}
+.mm-sh-text .mm-bub-ru{font-size:clamp(18px,1.5vw,24px)}.mm-sh-text .mm-bub{padding:14px 22px 16px}
+.mm-sh-text .mm-chat-ava{width:54px;height:54px;font-size:31px}.mm-sh-text .mm-chat-name{font-size:22px}.mm-sh-text .mm-chat-st{font-size:14px}
+.mm-sh-text .mm-typing{padding:18px 22px}.mm-sh-text .mm-typing i{width:10px;height:10px}
+/* задания: на всю ширину и крупно */
+.mm-sh-task{width:calc(min(1680px, 92vw) / 1.5);margin:0 auto;zoom:1.5}
+.mm-sh-task>div>.mt-6{display:none}
+.mm-sh-task .mm-opts-col{display:grid;grid-template-columns:1fr 1fr 1fr;grid-auto-flow:row;max-width:none}
+@media (max-width:1200px){.mm-sh-task{width:calc(92vw / 1.25);zoom:1.25}.mm-sh-task .mm-opts-col{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.mm-sh-gram{grid-template-columns:1fr}.mm-sh-stage{padding:8px 16px 16px}.mm-sh-ltitle{display:none}.mm-sh-task{width:auto;zoom:1}.mm-sh-task .mm-opts-col{grid-template-columns:1fr}.mm-sh-who{width:56px}.mm-sh-bar{padding:12px 16px}}
 /* книги серии в работе: не открываются */
 .mm-bookrow-locked{cursor:default}
 .mm-bookrow-locked .mm-book-go{visibility:hidden}
