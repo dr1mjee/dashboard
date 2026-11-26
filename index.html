@@ -129390,7 +129390,7 @@ function MaoMat_mmSlides(L) {
   const S = [{ t: "cover", sec: null }];
   for (let i = 0; i < L.words.length; i += 8) S.push({ t: "words", sec: "words", ws: L.words.slice(i, i + 8) });
   L.names.length && S.push({ t: "words", sec: "words", ws: L.names, names: 1 });
-  if (L.grammar.length && L.grammar.every((g) => g.plaque)) for (let j = 0; j < L.grammar.length; j += 8) S.push({ t: "recap", sec: "grammar", gs: L.grammar.slice(j, j + 8) });
+  if (!L.num && L.grammar.length) for (let j = 0; j < L.grammar.length; j += 8) S.push({ t: "recap", sec: "grammar", gs: L.grammar.slice(j, j + 8) });
   else L.grammar.forEach((g, gi) => S.push({ t: "gram", sec: "grammar", g, gi }));
   L.texts.forEach((tx, ti) => {
     const lines = tx.lines.map((l, li) => ({ id: ti + "_" + li, toks: MaoMat_tokens(l[1], L.dict, l[2]), py: l[2], ru: l[3], name: l[0], cls: l[4] }));
