@@ -126356,8 +126356,9 @@ function MaoMat_BookCard({ tb, open }) {
   const ready = MaoMat_readyCount(tb) > 0;
   return c.jsxs("button", {
     type: "button",
-    onClick: () => open(tb),
-    className: Te("mm-bookrow", !ready && "mm-bookrow-soon"),
+    onClick: () => !tb.locked && open(tb),
+    disabled: !!tb.locked,
+    className: Te("mm-bookrow", !ready && "mm-bookrow-soon", tb.locked && "mm-bookrow-locked"),
     style: { background: MaoMat_tint(tb.id) },
     children: [
       c.jsx("div", {
@@ -129448,6 +129449,13 @@ MaoMat_BOOKS.push({ id: "mm_hy1", title: "毛毛汉语 1", author: "Школа �
 MaoMat_COVERS["mm_hy1"] = "covers/mm_hy1.webp";
 MaoMat_TINT["mm_hy1"] = "#E8F3EC";
 MaoMat_HSK["mm_hy1"] = ["毛毛汉语 1", "elementary"];
+[[2, "#DCE6F4", "elementary"], [3, "#FBEBD3", "quasi"], [4, "#F6E0E2", "intermediate"], [5, "#F0DCE2", "intermediate"], [6, "#EDE3DB", "advanced"]].forEach(([n, tint, lv]) => {
+  const id = "mm_hy" + n;
+  MaoMat_BOOKS.push({ id, title: "毛毛汉语 " + n, author: "Школа китайского языка Маомао", lessons: [], locked: !0 });
+  MaoMat_COVERS[id] = "covers/" + id + ".webp";
+  MaoMat_TINT[id] = tint;
+  MaoMat_HSK[id] = ["毛毛汉语 " + n, lv];
+});
 MaoMat_SERIES.push({ name: "毛毛汉语 · учебник школы", test: (id) => /^mm_hy\d$/.test(id) && MaoMat_mmOn() });
 } catch (e) { console.error("毛毛汉语:", e); }
 /* MMHY-END */
@@ -131160,6 +131168,9 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-choice{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:10px 14px;font-size:20px}
 .mm-choice b{font:700 13px Inter,sans-serif;color:#2F9E5B;width:14px}
 @media (max-width:640px){.mm-choices{grid-template-columns:1fr}.mm-choice{font-size:18px}}
+/* книги серии в работе: не открываются */
+.mm-bookrow-locked{cursor:default}
+.mm-bookrow-locked .mm-book-go{visibility:hidden}
 /* MMHY-CSS-END */
 /* ===== Материалы ===== */
 .mm-lpills-m .mm-lpills{width:100%;max-width:100%}
