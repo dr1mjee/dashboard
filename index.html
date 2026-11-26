@@ -129390,7 +129390,7 @@ function MaoMat_mmSlides(L) {
   const S = [{ t: "cover", sec: null }];
   for (let i = 0; i < L.words.length; i += 8) S.push({ t: "words", sec: "words", ws: L.words.slice(i, i + 8) });
   L.names.length && S.push({ t: "words", sec: "words", ws: L.names, names: 1 });
-  if (L.grammar.length && L.grammar.every((g) => g.plaque)) S.push({ t: "recap", sec: "grammar" });
+  if (L.grammar.length && L.grammar.every((g) => g.plaque)) for (let j = 0; j < L.grammar.length; j += 8) S.push({ t: "recap", sec: "grammar", gs: L.grammar.slice(j, j + 8) });
   else L.grammar.forEach((g, gi) => S.push({ t: "gram", sec: "grammar", g, gi }));
   L.texts.forEach((tx, ti) => {
     const lines = tx.lines.map((l, li) => ({ id: ti + "_" + li, toks: MaoMat_tokens(l[1], L.dict, l[2]), py: l[2], ru: l[3], name: l[0], cls: l[4] }));
@@ -129516,7 +129516,7 @@ function MaoMat_MMShow({ L, onClose }) {
   else if (s.t === "recap")
     body = c.jsx("div", {
       className: "mm-sh-recap",
-      children: L.grammar.map((g) => {
+      children: s.gs.map((g) => {
         const ex = g.blocks[0].ex[0];
         const k = "g:" + (ex[3] || ex[0]);
         return c.jsxs(
@@ -131553,10 +131553,10 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-sh-chip.mm-chip-z{background:#333333;border-color:#333333;color:#fff}
 .theme-dark .mm-sh-chip.mm-chip-z{background:#D9D9D9;border-color:#D9D9D9;color:#000}
 .mm-sh-task>div>.mm-sh-task>div>.mt-6,.mm-sh-task>div>.mt-6{display:none}
-.mm-sh-recap{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mm-sh-recap{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:10px}
 .mm-sh-rrow{display:flex;align-items:center;gap:18px;background:#F5F5F5;border-radius:20px;padding:12px 18px;cursor:pointer}
 .mm-sh-rrow.on{box-shadow:inset 0 0 0 2px #000}
-.mm-sh-rrow .mm-sh-chip{flex-shrink:0;min-width:110px;justify-content:center}
+.mm-sh-rrow .mm-sh-chip{flex-shrink:0;width:150px;justify-content:center}
 .mm-sh-rrow .mm-sh-exzh{font-size:clamp(24px,2vw,30px)}
 @media (max-width:900px){.mm-sh-recap{grid-template-columns:1fr}}
 .mm-sh-text .mm-bub-ru{font-size:18px}.mm-sh-text .mm-bub{padding:12px 18px 14px}
