@@ -127257,6 +127257,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
   const [word, setWord] = H.useState(null);
   const [present, setPresent] = H.useState(!1);
   const [games, setGames] = H.useState(!1);
+  const [show, setShow] = H.useState(!1);
   const gamesOk = H.useMemo(() => MaoMat_hasGames(L), [L]);
   H.useEffect(() => ((MaoMat_wordOpener = setWord), () => { MaoMat_wordOpener === setWord && (MaoMat_wordOpener = null); }), []);
   const secRef = H.useRef(sec);
@@ -127293,11 +127294,11 @@ function MaoMat_LessonScreen({ lesson: L }) {
   }, []);
   H.useEffect(() => {
     const k = (e) => {
-      e.key === "Escape" && focus === null && !word && !present && !games && !document.fullscreenElement && nav.pop();
+      e.key === "Escape" && focus === null && !word && !present && !show && !games && !document.fullscreenElement && nav.pop();
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [focus, word, present, games]);
+  }, [focus, word, present, show, games]);
   const allWords = L.words.concat(L.names);
   const wordKeys = allWords.map((w) => "w:" + w.h);
   const gramKeys = [];
@@ -127384,6 +127385,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
                       c.jsx("div", { className: "text-[13px] text-black/50 leading-tight mt-0.5 truncate", children: L.titleRu || L.title }),
                     ] }),
                     gamesOk && c.jsx("button", { type: "button", onClick: () => (MaoMat_stop(), setGames(!0)), "aria-label": "Игры", className: "mm-back shrink-0", children: c.jsx(MaoMat_GIcon, { id: "btn", size: 20 }) }),
+                    L.mm && c.jsx("button", { type: "button", onClick: () => (MaoMat_stop(), setShow(!0)), "aria-label": "Показ урока", className: "mm-back shrink-0", children: c.jsx(MaoMat_IconBook, { size: 20 }) }),
                   ],
                 }),
                 c.jsx("div", { className: "mt-3 mm-lpills-m", children: pills }),
@@ -127401,7 +127403,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
                     children: L.num ? "Урок " + L.num + " · " + (L.titleRu || L.title) : "Повторение · " + (L.titleRu || L.title),
                   }),
                   c.jsx("div", { className: "flex-1 min-w-0 flex lg:justify-end", children: pills }),
-                  wide && gamesOk && c.jsxs("button", {
+                  L.mm ? c.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [gamesOk && c.jsx("button", { type: "button", onClick: () => (MaoMat_stop(), setGames(!0)), title: "Игры", "aria-label": "Игры", className: "mm-back shrink-0", children: c.jsx(MaoMat_GIcon, { id: "btn", size: 20 }) }), c.jsx("button", { type: "button", onClick: () => (MaoMat_stop(), setShow(!0)), title: "Показ урока", "aria-label": "Показ урока", className: "mm-back shrink-0", children: c.jsx(MaoMat_IconBook, { size: 20 }) })] }) : wide && gamesOk && c.jsxs("button", {
                     type: "button",
                     onClick: () => (MaoMat_stop(), setGames(!0)),
                     title: "Игры по словам и предложениям урока",
@@ -127481,6 +127483,7 @@ function MaoMat_LessonScreen({ lesson: L }) {
       ),
       word && c.jsx(MaoMat_WordSheet, { t: word, onClose: () => setWord(null) }),
       present && c.jsx(MaoMat_Present, { L, onClose: () => (MaoMat_stop(), setPresent(!1)) }),
+      show && c.jsx(MaoMat_MMShow, { L, onClose: () => (MaoMat_stop(), setShow(!1)) }),
       games && c.jsx(MaoMat_Games, { L, onClose: () => setGames(!1) }),
     ],
   });
@@ -129379,16 +129382,214 @@ function MaoMat_Colloc({ L, R }) {
 
 /* Тексты: кнопка реплики — 1-й клик пиньинь, 2-й перевод (и каждый раз озвучка) */
 /* MMHY-START */
+/* ===== 毛毛汉语: показ урока на экран (только для книг школы) =====
+   Слайды по порядку: обложка → слова (по 8) → имена → правило грамматики (по слайду) → тексты
+   (реплики появляются по одной) → задания (по слайду) → конец. Клавиши: → / пробел — дальше, ← — назад, Esc — выйти. */
+const MaoMat_EMO = { "金敏": "🐯", "王小雨": "🐼", "安娜": "🪆" };
+function MaoMat_mmSlides(L) {
+  const S = [{ t: "cover", sec: null }];
+  for (let i = 0; i < L.words.length; i += 8) S.push({ t: "words", sec: "words", ws: L.words.slice(i, i + 8) });
+  L.names.length && S.push({ t: "words", sec: "words", ws: L.names, names: 1 });
+  L.grammar.forEach((g, gi) => S.push({ t: "gram", sec: "grammar", g, gi }));
+  L.texts.forEach((tx, ti) => {
+    const lines = tx.lines.map((l, li) => ({ id: ti + "_" + li, toks: MaoMat_tokens(l[1], L.dict, l[2]), py: l[2], ru: l[3], name: l[0], cls: l[4] }));
+    const steps = tx.type === "dialog" || tx.type === "chat" || !tx.type ? lines.length : 0;
+    S.push({ t: "text", sec: "texts", tx: { ...tx, lines }, ti, steps });
+  });
+  L.tasks.forEach((tk, ki) => S.push({ t: "task", sec: "tasks", tk, ki }));
+  S.push({ t: "end", sec: null });
+  return S;
+}
+const MaoMat_MM_SECS = [["words", "Слова"], ["grammar", "Грамматика"], ["texts", "Тексты"], ["tasks", "Задания"]];
+function MaoMat_MMShow({ L, onClose }) {
+  const S = H.useMemo(() => MaoMat_mmSlides(L), [L]);
+  const R = MaoMat_useStages(L);
+  const [i, setI] = H.useState(0);
+  const [shown, setShown] = H.useState(1);
+  const s = S[i];
+  const go = (j, full) => {
+    if (j < 0 || j >= S.length) return;
+    MaoMat_stop();
+    setI(j);
+    setShown(full && S[j].steps ? S[j].steps : 1);
+  };
+  const next = () => (s.steps && shown < s.steps ? setShown(shown + 1) : go(i + 1));
+  const prev = () => go(i - 1, !0);
+  const ref = H.useRef({});
+  ref.current = { next, prev };
+  H.useEffect(() => {
+    const k = (e) => {
+      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") (e.preventDefault(), ref.current.next());
+      else if (e.key === "ArrowLeft" || e.key === "PageUp") (e.preventDefault(), ref.current.prev());
+      else if (e.key === "Escape") (e.stopPropagation(), onClose());
+    };
+    window.addEventListener("keydown", k, !0);
+    return () => window.removeEventListener("keydown", k, !0);
+  }, []);
+  const tap = (k, text) => R.next(k) === 1 && MaoMat_speak(text, k);
+  const say = (line) => MaoMat_toks2str(line.toks);
+  const secs = MaoMat_MM_SECS.filter(([id]) => S.some((x) => x.sec === id));
+  let body = null;
+  if (s.t === "cover")
+    body = c.jsxs("div", {
+      className: "mm-sh-cover",
+      children: [
+        c.jsx("div", { className: "mm-sh-kick", children: L.num ? "Урок " + L.num : "Повторение" }),
+        c.jsx("div", { className: "mm-zh mm-sh-title", children: L.title }),
+        c.jsx("div", { className: "mm-sh-sub", children: L.titleRu }),
+      ],
+    });
+  else if (s.t === "words")
+    body = c.jsx("div", {
+      className: "mm-sh-words",
+      children: s.ws.map((w) => {
+        const k = "w:" + w.h;
+        return c.jsxs(
+          "div",
+          {
+            role: "button",
+            tabIndex: 0,
+            onClick: () => tap(k, w.h),
+            className: Te("mm-sh-word", R.get(k) && "on"),
+            children: [
+              c.jsx("div", { className: "mm-sh-wpy", children: R.py(k) ? w.py : "" }),
+              c.jsx("div", { className: "mm-zh mm-sh-wh", children: w.h }),
+              c.jsx("div", { className: "mm-sh-wru", children: R.ru(k) ? w.ru : "" }),
+            ],
+          },
+          k,
+        );
+      }),
+    });
+  else if (s.t === "gram")
+    body = c.jsxs("div", {
+      className: "mm-sh-gram",
+      children: [
+        c.jsxs("div", { className: "mm-plq", children: [c.jsx("span", { className: "mm-num", children: s.gi + 1 }), c.jsx("div", { children: c.jsx(MaoMat_Xn, { text: s.g.title }) })] }),
+        s.g.text && c.jsx("div", { className: "mm-sh-gtext", children: c.jsx(MaoMat_Xn, { text: s.g.text }) }),
+        ...s.g.blocks.map((b, bi) =>
+          c.jsxs(
+            "div",
+            {
+              className: "mm-sh-gblock",
+              children: [
+                b.parts && b.parts.length > 0 &&
+                  c.jsx("div", {
+                    className: "mm-sh-scheme",
+                    children: b.parts.map((p, pi) => [pi > 0 && c.jsx("span", { className: "mm-sh-plus", children: "+" }, "p" + pi), c.jsx("span", { className: Te("mm-sh-chip", p.z && "mm-chip-z"), children: c.jsx(MaoMat_Xn, { text: p.l }) }, pi)]),
+                  }),
+                ...b.ex.map((ex) => {
+                  const k = "g:" + (ex[3] || ex[0]);
+                  return c.jsxs(
+                    "div",
+                    {
+                      role: "button",
+                      tabIndex: 0,
+                      onClick: () => tap(k, ex[0]),
+                      className: Te("mm-sh-ex", R.get(k) && "on"),
+                      children: [
+                        R.py(k) && c.jsx("div", { className: "mm-sh-expy", children: ex[1] }),
+                        c.jsx("div", { className: "mm-zh mm-sh-exzh", children: MaoMat_Z(ex[0]) }),
+                        R.ru(k) && c.jsx("div", { className: "mm-sh-exru", children: ex[2] }),
+                      ],
+                    },
+                    k,
+                  );
+                }),
+              ],
+            },
+            bi,
+          ),
+        ),
+      ],
+    });
+  else if (s.t === "text") {
+    const tx = s.tx;
+    const head = c.jsxs("div", { className: "mm-sh-thead", children: [c.jsx("b", { className: "mm-txk", children: tx.title }), tx.name] });
+    if (tx.type === "chat")
+      body = c.jsxs("div", { className: "mm-sh-text", children: [head, c.jsx(MaoMat_MMChat, { t: tx, R, say, n: shown, onNext: next })] });
+    else
+      body = c.jsxs("div", {
+        className: "mm-sh-text",
+        onClick: (e) => s.steps && !e.target.closest(".mm-sh-line") && next(),
+        children: [
+          head,
+          c.jsx("div", {
+            className: Te("mm-sh-lines", "mm-sh-" + (tx.type || "dialog")),
+            children: tx.lines.slice(0, s.steps ? shown : tx.lines.length).map((l) => {
+              const k = "l:" + l.id;
+              const go1 = () => tap(k, say(l));
+              return c.jsxs(
+                "div",
+                {
+                  role: "button",
+                  tabIndex: 0,
+                  onClick: go1,
+                  className: Te("mm-sh-line", l.cls && "mm-sh-" + l.cls, R.get(k) && "on"),
+                  children: [
+                    l.name && c.jsx("div", { className: "mm-zh mm-sh-who", children: l.name }),
+                    c.jsxs("div", { className: "mm-sh-say", children: [c.jsx(MaoMat_TokenLine, { toks: l.toks, pinyin: R.py(k), onWord: go1 }), R.ru(k) && c.jsx("div", { className: "mm-sh-ru", children: l.ru })] }),
+                  ],
+                },
+                l.id,
+              );
+            }),
+          }),
+          s.steps > 0 && shown < s.steps && c.jsxs("div", { className: "mm-typing mm-sh-more", children: [c.jsx("i", {}), c.jsx("i", {}), c.jsx("i", {})] }),
+        ],
+      });
+  } else if (s.t === "task") body = c.jsx("div", { className: "mm-sh-task", children: c.jsx(MaoMat_Tasks, { L: { ...L, tasks: [s.tk], tn: s.ki } }, s.tk.id) });
+  else
+    body = c.jsxs("div", {
+      className: "mm-sh-cover",
+      children: [
+        c.jsx("div", { className: "mm-sh-done", children: c.jsx("svg", { viewBox: "0 0 24 24", children: c.jsx("path", { d: "M5 12.5l4.5 4.5L19 7.5" }) }) }),
+        c.jsx("div", { className: "mm-sh-title mm-sh-title-ru", children: L.num ? "Урок " + L.num + " пройден" : "Повторение пройдено" }),
+      ],
+    });
+  return Dc.createPortal(
+    c.jsxs("div", {
+      className: "mm-layer mm-show fixed inset-0 z-[60] bg-white flex flex-col",
+      children: [
+        c.jsx("div", { className: "mm-sh-prog", children: c.jsx("div", { style: { width: (100 * (i + 1)) / S.length + "%" } }) }),
+        c.jsxs("div", {
+          className: "mm-sh-bar",
+          children: [
+            c.jsx("button", { type: "button", onClick: onClose, "aria-label": "Закрыть показ", className: "mm-back shrink-0", children: c.jsx(Bi, { size: 20 }) }),
+            c.jsx("div", { className: "mm-sh-ltitle", children: (L.num ? "Урок " + L.num : "Повторение") + " · " + (L.titleRu || L.title) }),
+            c.jsx("div", {
+              className: "mm-sh-pills",
+              children: secs.map(([id, lb]) => c.jsx("button", { type: "button", onClick: () => go(S.findIndex((x) => x.sec === id)), className: Te("mm-lpill", s.sec === id && "on"), children: lb }, id)),
+            }),
+          ],
+        }),
+        c.jsx("div", { className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-sh-" + s.t), children: body }, i) }),
+        c.jsxs("div", {
+          className: "mm-sh-nav",
+          children: [
+            c.jsx("span", { className: "mm-sh-count", children: i + 1 + " / " + S.length }),
+            c.jsx("button", { type: "button", onClick: prev, disabled: i === 0, "aria-label": "Назад", className: "mm-sh-btn", children: c.jsx(MaoMat_PresArrow, { left: !0 }) }),
+            c.jsx("button", { type: "button", onClick: next, disabled: i === S.length - 1, "aria-label": "Дальше", className: "mm-sh-btn mm-sh-btn-go", children: c.jsx(MaoMat_PresArrow, {}) }),
+          ],
+        }),
+      ],
+    }),
+    Ac(),
+  );
+}
+
 const MaoMat_TFI = { "对": "M5 12.5l4.5 4.5L19 7.5", "错": "M6.5 6.5l11 11M17.5 6.5l-11 11" };
 const MaoMat_tfi = (L, o) => (L && L.mm ? MaoMat_TFI[o] : void 0);
 /* переписка (жанр «сообщения»): сообщения появляются по одному — нажатие на пустое место переписки
    или на «…» открывает следующее; нажатие на сообщение — пиньинь, ещё раз — перевод, как у строк текста */
-function MaoMat_MMChat({ t, R, onWord, say }) {
+function MaoMat_MMChat({ t, R, onWord, say, n: nn, onNext }) {
   const cur = MaoMat_useSpeaking();
-  const [n, setN] = H.useState(1);
+  const [n0, setN] = H.useState(1);
+  const n = nn || n0;
   const all = t.lines.length;
   const more = n < all;
-  const next = () => more && setN(n + 1);
+  const next = () => more && (onNext ? onNext() : setN(n + 1));
   const other = [...new Set(t.lines.map((l) => l.name).filter((x) => x !== t.me))];
   const nx = t.lines[n];
   return c.jsxs("div", {
@@ -129398,7 +129599,7 @@ function MaoMat_MMChat({ t, R, onWord, say }) {
       c.jsxs("div", {
         className: "mm-chat-top",
         children: [
-          c.jsx(ir, { size: 38 }),
+          c.jsx("div", { className: "mm-chat-ava", children: c.jsx("span", { children: MaoMat_EMO[other[0]] || "🐼" }) }),
           c.jsxs("div", { children: [c.jsx("div", { className: "mm-zh mm-chat-name", children: other.join("、") }), c.jsx("div", { className: "mm-chat-st", children: "в сети" })] }),
         ],
       }),
@@ -129407,16 +129608,17 @@ function MaoMat_MMChat({ t, R, onWord, say }) {
         children: [
           ...t.lines.slice(0, n).map((line) => {
             const k = "l:" + line.id;
+            const tapB = () => R.next(k) === 1 && MaoMat_speak(say(line), k);
             return c.jsxs(
               "div",
               {
                 role: "button",
                 tabIndex: 0,
-                onClick: () => R.next(k) === 1 && MaoMat_speak(say(line), k),
+                onClick: tapB,
                 className: Te("mm-bub", line.name === t.me && "mm-bub-me", (cur === k || R.get(k)) && "mm-bub-on"),
                 children: [
                   c.jsx("div", { className: "mm-zh mm-bub-who", children: line.name }),
-                  c.jsx(MaoMat_TokenLine, { toks: line.toks, pinyin: R.py(k), onWord }),
+                  c.jsx(MaoMat_TokenLine, { toks: line.toks, pinyin: R.py(k), onWord: onWord || tapB }),
                   R.ru(k) && c.jsx("div", { className: "mm-bub-ru", children: line.ru }),
                 ],
               },
@@ -130423,7 +130625,7 @@ function MaoMat_Tasks({ L }) {
                 c.jsxs("div", {
                   className: "mm-thead flex items-center gap-3 mb-1",
                   children: [
-                    c.jsx(MaoMat_Num, { n: ti + 1 }),
+                    c.jsx(MaoMat_Num, { n: (L.tn || 0) + ti + 1 }),
                     c.jsx("div", { className: "text-[19px] font-semibold leading-snug min-w-0", style: { flex: 1 }, children: bw[0] }),
                     L.answersBtn &&
                       !MaoMat_STUDENT &&
@@ -131219,7 +131421,8 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-typing i:nth-child(2){animation-delay:.15s}.mm-typing i:nth-child(3){animation-delay:.3s}
 @keyframes mmDot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
 .mm-chat-top{display:flex;align-items:center;gap:10px;padding:8px 10px 12px;border-bottom:1px solid rgba(0,0,0,.06);margin-bottom:6px}
-.mm-chat-ava{width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+.mm-chat-ava{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:23px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;flex-shrink:0}
+.theme-dark .mm-chat-ava span{filter:invert(1) hue-rotate(180deg)}
 .mm-chat-name{font-size:17px}.mm-chat-st{font-size:12px;color:rgba(0,0,0,.45)}
 .mm-chat-list{display:flex;flex-direction:column;gap:8px;padding:4px}
 .mm-bub{align-self:flex-start;background:#fff;border-radius:18px 18px 18px 6px;padding:8px 12px 10px;cursor:pointer;transition:box-shadow .15s}
@@ -131255,6 +131458,68 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-opts-col .mm-opt{counter-increment:mmo;justify-content:flex-start;min-height:46px;padding:0 20px 0 14px}
 .mm-opts-col .mm-opt::before{content:counter(mmo,upper-latin);font:600 13px/1 Inter,sans-serif;color:rgba(0,0,0,.4);width:16px;margin-right:12px;text-align:left}
 .mm-opts-col .mm-opt-ok::before{color:#2F9E5B}.mm-opts-col .mm-opt-bad::before{color:#fff}
+/* ===== показ урока ===== */
+.mm-show{user-select:none}
+.mm-sh-prog{height:3px;background:#F0F0F0;flex-shrink:0}.mm-sh-prog>div{height:100%;background:#2F9E5B;transition:width .3s ease}
+.mm-sh-bar{display:flex;align-items:center;gap:16px;padding:14px 24px;flex-shrink:0}
+.mm-sh-ltitle{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.mm-sh-pills{display:flex;gap:4px;background:#F2F2F2;border-radius:999px;padding:4px;flex-shrink:0}
+.mm-sh-pills .mm-lpill{height:34px;padding:0 16px;font-size:13.5px}
+.mm-sh-stage{flex:1;min-height:0;overflow-y:auto;display:flex;padding:8px 40px 24px}
+.mm-sh-slide{margin:auto;width:100%;max-width:1180px;animation:mmSlideIn .25s ease-out}
+@keyframes mmSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mm-sh-nav{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 24px 20px;flex-shrink:0}
+.mm-sh-count{font-size:13px;color:rgba(0,0,0,.4);margin-right:6px;font-variant-numeric:tabular-nums}
+.mm-sh-btn{width:52px;height:52px;border-radius:50%;border:1px solid #E5E5E5;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mm-sh-btn:disabled{opacity:.3;cursor:default}.mm-sh-btn-go{background:#000;border-color:#000;color:#fff}
+/* обложка и конец */
+.mm-sh-cover{text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
+.mm-sh-kick{font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#2F9E5B}
+.mm-sh-title{font-size:clamp(56px,7vw,104px);line-height:1.15}
+.mm-sh-title-ru{font-size:clamp(32px,3.4vw,48px);font-weight:600}
+.mm-sh-sub{font-size:clamp(20px,2vw,28px);color:rgba(0,0,0,.5)}
+.mm-sh-done{width:104px;height:104px;border-radius:50%;background:#2F9E5B;display:flex;align-items:center;justify-content:center}
+.mm-sh-done svg{width:52px;height:52px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* слова */
+.mm-sh-words{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.mm-sh-word{background:#F5F5F5;border-radius:28px;min-height:clamp(150px,19vh,210px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;cursor:pointer;transition:box-shadow .15s}
+.mm-sh-word.on{box-shadow:inset 0 0 0 2px #000}
+.mm-sh-wh{font-size:clamp(44px,4.6vw,68px);line-height:1.15}
+.mm-sh-wpy{font-size:20px;color:rgba(0,0,0,.5);min-height:26px}
+.mm-sh-wru{font-size:16px;color:rgba(0,0,0,.7);min-height:22px;text-align:center;line-height:1.3}
+/* грамматика */
+.mm-sh-gram{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.mm-sh-gram .mm-plq{font-size:26px;padding:18px 26px;border-radius:24px;margin:0}
+.mm-sh-gram .mm-plq .mm-num{width:34px;height:34px;font-size:16px}
+.mm-sh-gtext{font-size:21px;line-height:1.5;color:rgba(0,0,0,.75)}
+.mm-sh-gblock{background:#F5F5F5;border-radius:24px;padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.mm-sh-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.mm-sh-chip{height:44px;padding:0 18px;display:inline-flex;align-items:center;border-radius:14px;background:#fff;border:1px solid rgba(0,0,0,.1);font-size:17px;font-weight:500}
+.mm-sh-plus{color:rgba(0,0,0,.3);font-size:18px}
+.mm-sh-ex{padding:10px 12px;border-radius:16px;cursor:pointer}
+.mm-sh-ex:hover{background:#EDEDED}.mm-sh-ex.on{background:#fff}
+.mm-sh-exzh{font-size:clamp(28px,2.6vw,38px);line-height:1.35}
+.mm-sh-expy{font-size:18px;color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:18px;color:rgba(0,0,0,.7);margin-top:2px}
+/* тексты */
+.mm-sh-text{max-width:1000px;margin:0 auto;min-height:60vh;cursor:default}
+.mm-sh-thead{text-align:center;font-size:20px;color:rgba(0,0,0,.45);margin-bottom:20px}
+.mm-sh-thead .mm-txk{font-size:14px}
+.mm-sh-lines{display:flex;flex-direction:column;gap:6px}
+.mm-sh-line{display:flex;gap:20px;align-items:baseline;padding:12px 16px;border-radius:18px;cursor:pointer;animation:mmBubIn .22s ease-out}
+.mm-sh-line:hover{background:#F5F5F5}.mm-sh-line.on{background:#F5F5F5}
+.mm-sh-who{width:84px;flex-shrink:0;font-size:18px;color:rgba(0,0,0,.4);text-align:right}
+.mm-sh-say{flex:1;min-width:0}
+.mm-sh-say .mm-zh{font-size:clamp(28px,2.7vw,40px)!important}
+.mm-sh-say button>span:not(.mm-zh){font-size:15px!important}
+.mm-sh-ru{font-size:19px;color:rgba(0,0,0,.7);margin-top:6px}
+.mm-sh-head .mm-sh-say,.mm-sh-sign .mm-sh-say{flex:0 1 auto}.mm-sh-sign{justify-content:flex-end}
+.mm-sh-more{margin:10px 0 0 120px;cursor:pointer}
+.mm-sh-text .mm-chat{padding:10px 18px 18px}
+.mm-sh-text .mm-bub .mm-zh{font-size:clamp(26px,2.4vw,34px)!important}
+.mm-sh-text .mm-bub-ru{font-size:18px}.mm-sh-text .mm-bub{padding:12px 18px 14px}
+/* задания: крупнее, по одному */
+.mm-sh-task{max-width:1000px;margin:0 auto;zoom:1.3}
+@media (max-width:900px){.mm-sh-words{grid-template-columns:repeat(2,1fr)}.mm-sh-stage{padding:8px 16px 16px}.mm-sh-ltitle{display:none}.mm-sh-task{zoom:1}.mm-sh-who{width:56px}.mm-sh-bar{padding:12px 16px}}
 /* книги серии в работе: не открываются */
 .mm-bookrow-locked{cursor:default}
 .mm-bookrow-locked .mm-book-go{visibility:hidden}
