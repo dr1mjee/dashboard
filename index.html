@@ -129529,7 +129529,7 @@ function MaoMat_MMShow({ L, onClose }) {
                     className: "mm-sh-scheme",
                     children: b.parts.map((p, pi) => [pi > 0 && c.jsx("span", { className: "mm-sh-plus", children: "+" }, "p" + pi), c.jsx("span", { className: Te("mm-sh-chip", p.z && "mm-chip-z"), children: c.jsx(MaoMat_Xn, { text: p.l }) }, pi)]),
                   }),
-                c.jsx("div", { className: "mm-sh-exs", style: { gridTemplateColumns: "repeat(" + (b.ex.length === 4 ? 2 : Math.min(3, b.ex.length)) + ", minmax(0, 1fr))" }, children: b.ex.map((ex) => {
+                c.jsx("div", { className: "mm-sh-exs", style: { gridTemplateColumns: "repeat(" + (b.ex.length >= 5 ? 2 : 1) + ", minmax(0, 1fr))" }, children: b.ex.map((ex) => {
                   const k = "g:" + (ex[3] || ex[0]);
                   return c.jsxs(
                     "div",
