@@ -129478,11 +129478,11 @@ function MaoMat_MMShow({ L, onClose }) {
     body = c.jsxs("div", {
       className: "mm-sh-gram",
       children: [
-        c.jsxs("div", { className: "mm-sh-gleft", children: [
+        c.jsxs("div", { className: "mm-sh-gtop", children: [
         c.jsxs("div", { className: "mm-plq", children: [c.jsx("span", { className: "mm-num", children: s.gi + 1 }), c.jsx("div", { children: c.jsx(MaoMat_Xn, { text: s.g.title }) })] }),
         s.g.text && c.jsx("div", { className: "mm-sh-gtext", children: c.jsx(MaoMat_Xn, { text: s.g.text }) }),
         ] }),
-        c.jsx("div", { className: "mm-sh-gright", children: s.g.blocks.map((b, bi) =>
+        c.jsx("div", { className: "mm-sh-gbot", children: s.g.blocks.map((b, bi) =>
           c.jsxs(
             "div",
             {
@@ -129493,7 +129493,7 @@ function MaoMat_MMShow({ L, onClose }) {
                     className: "mm-sh-scheme",
                     children: b.parts.map((p, pi) => [pi > 0 && c.jsx("span", { className: "mm-sh-plus", children: "+" }, "p" + pi), c.jsx("span", { className: Te("mm-sh-chip", p.z && "mm-chip-z"), children: c.jsx(MaoMat_Xn, { text: p.l }) }, pi)]),
                   }),
-                ...b.ex.map((ex) => {
+                c.jsx("div", { className: "mm-sh-exs", children: b.ex.map((ex) => {
                   const k = "g:" + (ex[3] || ex[0]);
                   return c.jsxs(
                     "div",
@@ -129510,7 +129510,7 @@ function MaoMat_MMShow({ L, onClose }) {
                     },
                     k,
                   );
-                }),
+                }) }),
               ],
             },
             bi,
@@ -129551,7 +129551,7 @@ function MaoMat_MMShow({ L, onClose }) {
         onClick: (e) => s.steps && !e.target.closest(".mm-sh-line") && next(),
         children: [
           head,
-          c.jsx("div", {
+          c.jsx("div", { className: "mm-sh-lyr", children: c.jsx("div", {
             className: Te("mm-sh-lines", "mm-shl-" + (tx.type || "dialog")),
             children: tx.lines.slice(0, shown).map((l, li) => {
               const k = "l:" + l.id;
@@ -129573,7 +129573,7 @@ function MaoMat_MMShow({ L, onClose }) {
                 l.id,
               );
             }),
-          }),
+          }) }),
         ],
       });
   } else if (s.t === "task") body = c.jsx("div", { className: "mm-sh-task", children: c.jsx(MaoMat_Tasks, { L: { ...L, tasks: [s.tk], tn: s.ki } }, s.tk.id) });
@@ -129601,7 +129601,7 @@ function MaoMat_MMShow({ L, onClose }) {
             }),
           ],
         }),
-        c.jsx("div", { ref: stage, className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t), children: body }, i) }),
+        c.jsx("div", { ref: stage, className: "mm-sh-stage", children: c.jsx("div", { className: Te("mm-sh-slide", "mm-shs-" + s.t, s.t === "text" && s.tx.type !== "chat" && "mm-shs-lyr"), children: body }, i) }),
         c.jsxs("div", {
           className: "mm-sh-nav",
           children: [
@@ -131518,34 +131518,39 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-sh-sub{font-size:clamp(22px,2.2vw,34px);color:rgba(0,0,0,.5)}
 .mm-sh-done{width:110px;height:110px;border-radius:50%;background:#2F9E5B;display:flex;align-items:center;justify-content:center}
 .mm-sh-done svg{width:54px;height:54px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-/* грамматика: слева правило, справа схема и примеры */
-.mm-sh-gram{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,3vw,56px);align-items:center}
-.mm-sh-gleft{display:flex;flex-direction:column;gap:22px}
-.mm-sh-gright{display:flex;flex-direction:column;gap:16px}
-.mm-sh-gram .mm-plq{font-size:clamp(26px,2.2vw,36px);line-height:1.25;padding:22px 28px;border-radius:28px;margin:0;gap:16px}
+/* грамматика: сверху правило, снизу схема и примеры в ряд */
+.mm-sh-gram{display:flex;flex-direction:column;gap:clamp(18px,2.4vh,30px)}
+.mm-sh-gtop{display:flex;flex-direction:column;gap:14px}
+.mm-sh-gbot{display:flex;flex-direction:column;gap:16px}
+.mm-sh-gram .mm-plq{font-size:clamp(26px,2.2vw,38px);line-height:1.25;padding:20px 28px;border-radius:28px;margin:0;gap:16px;align-self:flex-start;max-width:100%}
 .mm-sh-gram .mm-plq .mm-num{width:40px;height:40px;font-size:18px;flex-shrink:0}
-.mm-sh-gtext{font-size:clamp(20px,1.6vw,26px);line-height:1.5;color:rgba(0,0,0,.72)}
-.mm-sh-gblock{background:#F5F5F5;border-radius:28px;padding:24px 28px;display:flex;flex-direction:column;gap:4px}
-.mm-sh-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px}
+.mm-sh-gtext{font-size:clamp(20px,1.6vw,26px);line-height:1.5;color:rgba(0,0,0,.72);max-width:1300px}
+.mm-sh-gblock{background:#F5F5F5;border-radius:28px;padding:22px 26px;display:flex;flex-direction:column;gap:6px}
+.mm-sh-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px}
 .mm-sh-chip{height:52px;padding:0 22px;display:inline-flex;align-items:center;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.1);font-size:20px;font-weight:500}
 .mm-sh-chip.mm-chip-z{background:#333333;border-color:#333333;color:#fff}
 .theme-dark .mm-sh-chip.mm-chip-z{background:#D9D9D9;border-color:#D9D9D9;color:#000}
 .mm-sh-plus{color:rgba(0,0,0,.3);font-size:22px}
-.mm-sh-ex{padding:10px 14px;border-radius:18px;cursor:pointer}
-.mm-sh-ex:hover{background:#EDEDED}.mm-sh-ex.on{background:#fff}
-.mm-sh-exzh{font-size:clamp(32px,3vw,50px);line-height:1.35}
-.mm-sh-expy{font-size:clamp(18px,1.4vw,22px);color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:clamp(18px,1.4vw,22px);color:rgba(0,0,0,.7);margin-top:2px}
+.mm-sh-exs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+.mm-sh-ex{padding:14px 18px;border-radius:20px;cursor:pointer;background:#fff;display:flex;flex-direction:column;justify-content:center}
+.mm-sh-ex:hover{box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.25)}.mm-sh-ex.on{box-shadow:inset 0 0 0 2px #000}
+.mm-sh-exzh{font-size:clamp(30px,2.6vw,46px);line-height:1.35}
+.mm-sh-expy{font-size:clamp(17px,1.3vw,21px);color:rgba(0,0,0,.5)}.mm-sh-exru{font-size:clamp(17px,1.3vw,21px);color:rgba(0,0,0,.7);margin-top:2px}
 /* грамматика раздела (повторение) */
 .mm-sh-recap{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px}
 .mm-sh-rrow{display:flex;align-items:center;gap:24px;background:#F5F5F5;border-radius:22px;padding:14px 22px;cursor:pointer}
 .mm-sh-rrow.on{box-shadow:inset 0 0 0 2px #000}
 .mm-sh-rrow .mm-sh-chip{flex-shrink:0;width:180px;justify-content:center}
 .mm-sh-rrow .mm-sh-exzh{font-size:clamp(26px,2.3vw,38px)}
-/* текст как в плеере: текущая строка крупно в центре, пройденные бледнее и уходят вверх */
+/* текст как в плеере: текущая строка крупно в центре, пройденные бледнее и уходят вверх под мягкое затухание */
+.mm-shs-lyr{align-self:stretch;margin:0 auto;display:flex}
+.mm-shs-lyr .mm-sh-text{display:flex;flex-direction:column;height:100%;min-height:0}
 .mm-sh-text{width:100%;cursor:pointer}
-.mm-sh-thead{text-align:center;font-size:20px;color:rgba(0,0,0,.45);position:sticky;top:0;background:linear-gradient(#fff 70%,rgba(255,255,255,0));padding:6px 0 26px;z-index:1}
+.mm-sh-thead{text-align:center;font-size:20px;color:rgba(0,0,0,.45);padding:4px 0 8px;flex-shrink:0}
 .mm-sh-thead .mm-txk{font-size:14px}
-.mm-sh-lines{display:flex;flex-direction:column;gap:clamp(10px,1.6vh,22px);padding:26vh 0 38vh}
+.mm-sh-lyr{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 30%,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 30%,#000 100%)}
+.mm-sh-lyr::-webkit-scrollbar{display:none}
+.mm-sh-lines{display:flex;flex-direction:column;gap:clamp(10px,1.6vh,22px);padding:40vh 0 40vh}
 .mm-sh-line{display:flex;gap:clamp(20px,2vw,40px);align-items:baseline;padding:10px 20px;border-radius:22px;transition:opacity .35s ease,transform .35s ease;transform-origin:left center}
 .mm-sh-line.past{opacity:.28;transform:scale(.94)}
 .mm-sh-line.past:hover{opacity:.55}
