@@ -129432,9 +129432,12 @@ function MaoMat_MMShow({ L, onClose }) {
     const el = stage.current;
     if (!el) return;
     const cur = el.querySelector(".mm-sh-line.now");
-    if (cur) return cur.scrollIntoView({ block: "center", behavior: shown < 2 ? "auto" : "smooth" });
+    if (cur) {
+      cur.scrollIntoView({ block: "center", behavior: shown < 2 ? "auto" : "smooth" });
+      return;
+    }
     const all = el.querySelectorAll(".mm-bub");
-    all.length && all[all.length - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (all.length) all[all.length - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [shown, i]);
   const tap = (k, text) => R.next(k) === 1 && MaoMat_speak(text, k);
   const say = (line) => MaoMat_toks2str(line.toks);
