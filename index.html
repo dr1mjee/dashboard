@@ -131565,7 +131565,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 /* верно / неверно: две круглые кнопки справа от утверждения */
 .mm-item:has(.mm-opt-tf){display:flex;flex-wrap:wrap;align-items:center;column-gap:12px}
 .mm-item:has(.mm-opt-tf)>.mm-irow{flex:1 1 0;min-width:0;align-items:center}
-@media (max-width:640px){.mm-opt-tf{width:42px;min-height:42px!important}.mm-item:has(.mm-opt-tf)>.ml-9{gap:8px}}
+@media (max-width:640px){.mm-opt-tf{width:38px;height:38px;min-height:38px!important}.mm-opt-tf svg{width:17px;height:17px}.mm-item:has(.mm-opt-tf){column-gap:8px}.mm-item:has(.mm-opt-tf)>.ml-9{gap:6px}}
 .mm-item:has(.mm-opt-tf)>.ml-9{margin-top:0!important;flex-wrap:nowrap}
 .mm-item:has(.mm-opt-tf)>div:nth-child(n+3){flex-basis:100%}
 .mm-opt-tf{width:48px;padding:0!important}
@@ -131582,7 +131582,7 @@ const $5=()=>typeof window!="undefined"&&window.matchMedia&&window.matchMedia("(
 .mm-pm-l{font:600 14px Inter,sans-serif;color:rgba(0,0,0,.4);width:16px;flex-shrink:0}
 .mm-pm-tag{font:700 15px Inter,sans-serif;color:#2F9E5B;min-width:14px;text-align:right}
 .mm-pm-card.ok .mm-pm-l{color:#2F9E5B}
-@media (max-width:640px){.mm-pm{grid-template-columns:1fr;gap:10px}.mm-pm-col+.mm-pm-col{margin-top:10px}.mm-pm-t{font-size:20px}}
+@media (max-width:640px){.mm-pm{grid-template-columns:1fr;gap:8px}.mm-pm-col{gap:8px}.mm-pm-col+.mm-pm-col{margin-top:12px}.mm-pm-card{background:#F5F5F5;min-height:52px;padding:8px 14px}.mm-pm-card.ok{background:#EAF6EF}.mm-pm-t{font-size:20px}}
 /* ответы столбиком: A–F */
 .mm-opts-col{flex-direction:column;align-items:stretch;flex-wrap:nowrap!important;max-width:460px;gap:8px!important;counter-reset:mmo}
 .mm-opts-col .mm-opt{counter-increment:mmo;justify-content:flex-start;min-height:46px;padding:0 20px 0 14px}
